@@ -50,6 +50,7 @@ public:
     };
 
     Component();
+    Component(string &name, const BlockType &type);
     Component(string &name, const BlockType &type,
                  const vector<Port> &input, const vector <Port> &output);
     ~Component();
@@ -119,14 +120,8 @@ class Select : public Component {
 public:
 
     Select();
-    Select(string &name, const vector<Port> &input, 
-        const vector <Port> &output);
+    Select(string &name);
     ~Select();
-
-    void setConditionPort(const string &portName);
-    void setTruePort(const string &portName);
-    void setFalsePort(const string &portName);
-
 
 private:
 
@@ -134,14 +129,13 @@ private:
 
 class Branch : public Component {
 
+public:
+
     Branch();
-    Branch(string &name, const vector<Port> &input, 
-        const vector <Port> &output);
+    Branch(string &name);
     ~Branch();
 
-    void setConditionPort(const string &portName);
-    void setTruePort(const string &portName);
-    void setFalsePort(const string &portName);
+private:
 
 };
 
@@ -152,9 +146,7 @@ class Constant : public Component {
 public:
 
     Constant();
-    Constant(string &name, const vector<Port> &input, 
-        const vector <Port> &output, int slots, bool transparent, 
-        T constant);
+    Constant(string &name, int slots, bool transparent, T constant);
     ~Constant();
 
     T getConstant();
