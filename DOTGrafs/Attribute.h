@@ -7,11 +7,9 @@ using namespace std;
 
 class Attribute {
 
-private:
+public:
 
     string name;
-
-public:
 
     Attribute();
     Attribute(const string &name);
@@ -24,6 +22,9 @@ public:
     virtual void printValue(ofstream &file) = 0;
 
     void printAttribute(ofstream &file);
+
+private:
+
 
 };
 

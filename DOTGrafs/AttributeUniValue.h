@@ -6,21 +6,21 @@
 template <typename T>
 class AttributeUniValue : public Attribute {
 
-private:
+public:
 
     T value;
 
-public:
-
     AttributeUniValue();
     AttributeUniValue(const string &name);
-    AttributeUniValue(const string &name, const T &value);
+    AttributeUniValue(const string &name, T value);
     ~AttributeUniValue();
 
-    T getValue();
-    void setValue(const T& value);
+    T &getValue();
+    void setValue(T value);
     
     void printValue(ofstream &file);
+
+private:
 
 }; 
 
@@ -32,7 +32,7 @@ template <typename T>
 AttributeUniValue<T>::AttributeUniValue(const string &name) : Attribute(name) {}
 
 template <typename T>
-AttributeUniValue<T>::AttributeUniValue(const string &name, const T &value) : Attribute(name) {
+AttributeUniValue<T>::AttributeUniValue(const string &name, T value) : Attribute(name) {
     this->value = value;
 }
 
@@ -40,12 +40,12 @@ template <typename T>
 AttributeUniValue<T>::~AttributeUniValue() {}
 
 template <typename T>
-T AttributeUniValue<T>::getValue() {
+T &AttributeUniValue<T>::getValue() {
     return value;
 }
 
 template <typename T>
-void AttributeUniValue<T>::setValue(const T& value) {
+void AttributeUniValue<T>::setValue(T value) {
     this->value = value;
 }
 

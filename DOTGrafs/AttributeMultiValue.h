@@ -8,12 +8,10 @@ using namespace std;
 
 template <typename T>
 class AttributeMultiValue : public Attribute {
-
-private:
+ 
+public:
 
     vector <T> values;
-    
-public:
 
     AttributeMultiValue();
     AttributeMultiValue(const string &name);
@@ -22,12 +20,14 @@ public:
 
     vector <T> getValues();
     void setValues(const vector <T> &value);
-    void addValue(const T &value);
-    T getValue(int index);
-    void setValue(int index, const T &value);
+    void addValue(T value);
+    T &getValue(int index);
+    void setValue(int index, T value);
     void clearValues();
 
     void printValue(ofstream &file);
+
+private:
 
 };
 
@@ -41,8 +41,7 @@ AttributeMultiValue<T>::AttributeMultiValue(const string &name) : Attribute(name
 template <typename T>
 AttributeMultiValue<T>::AttributeMultiValue(const string &name, const vector <T> &values)
         : Attribute(name) {
-    
-    for (const T &value : values) {
+    for (T value : values) {
         addValue(value);
     }
 }
@@ -54,7 +53,7 @@ AttributeMultiValue<T>::~AttributeMultiValue() {
 
 
 template <typename T>
-void AttributeMultiValue<T>::addValue(const T &value) {
+void AttributeMultiValue<T>::addValue(T value) {
     values.push_back(value);
 }
 
@@ -75,12 +74,12 @@ void AttributeMultiValue<T>::clearValues() {
 }
 
 template <typename T>   
-T AttributeMultiValue<T>::getValue(int index) {
+T &AttributeMultiValue<T>::getValue(int index) {
     return values[index];
 }
 
 template <typename T>
-void AttributeMultiValue<T>::setValue(int index, const T &value) {
+void AttributeMultiValue<T>::setValue(int index, T value) {
     values[index] = value;
 }
 
