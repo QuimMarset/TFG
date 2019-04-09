@@ -1,8 +1,8 @@
 digraph "DataFlow Graph for 'prova' function" {
 	label="DataFlow Graph for 'prova' function";
 
-	const1[shape=oval, label="const1", type = "Constant", in = "", out = "out", value = "3"];
-	const2[shape=oval, label="const2", type = "Constant", in = "", out = "out", value = "3.2"];
-	branch1[shape=oval, label="branch1", type = "Select", in = "in inCondition? outTrue+ outFalse-", out = ""];
+	const1[shape=oval, label="const1", type = "Constant", in = "", out = "out:0", value = "3"];
+	const2[shape=oval, label="const2", type = "Constant", in = "", out = "out:0", value = "3.2"];
+	branch1[shape=oval, label="branch1", type = "Branch", in = "in:0 inCondition?:0", out = "outTrue+:0 outFalse-:0"];
 
 }

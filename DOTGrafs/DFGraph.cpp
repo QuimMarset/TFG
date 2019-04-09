@@ -19,7 +19,7 @@ DFGraph::~DFGraph() {
     DOTFile.close();
 }
 
-void DFGraph::addNode(Component* node) {
+void DFGraph::addNode(Block* node) {
     nodes.push_back(node);
 }
 void DFGraph::addEdge(Channel &edge) {
@@ -32,7 +32,7 @@ void DFGraph::printGraph() {
     DOTFile << "digraph \"DataFlow Graph for '" + functionName + "' function\" {" << endl;
     DOTFile << "\tlabel=\"DataFlow Graph for '" + functionName + "' function\";" << endl;
     DOTFile << endl;
-    for (Component* node : nodes) {
+    for (Block* node : nodes) {
         DOTFile << "\t";
         node->printBlock(DOTFile);
         node->closeBlock(DOTFile);

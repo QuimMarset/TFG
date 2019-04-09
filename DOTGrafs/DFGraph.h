@@ -2,7 +2,7 @@
 #define DFGRAPH_H
 
 
-#include "Component.h"
+#include "Block.h"
 #include "Channel.h"
 #include <vector>
 #include <fstream>
@@ -16,7 +16,7 @@ public:
     DFGraph();
     DFGraph(const string& functionName);
     ~DFGraph();
-    void addNode(Component* node);
+    void addNode(Block* node);
     void addEdge(Channel &edge);
     void printGraph();
 
@@ -24,7 +24,7 @@ private:
 
     string functionName;
     ofstream DOTFile;
-    vector <Component*> nodes;
+    vector <Block*> nodes;
     vector <Channel> edges;
 
 };

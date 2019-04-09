@@ -13,7 +13,6 @@ int main () {
     graf.addNode(&const2);
     graf.addNode(&branch1);
     graf.printGraph();
-    //graf.closeGraph();
     
     return 0;
 

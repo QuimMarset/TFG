@@ -1,57 +1,22 @@
-#ifndef COMPONENTS_H
-#define COMPONENTS_H
+#ifndef BlockS_H
+#define BlockS_H
 
 #include <vector>
 #include <string>
 #include <fstream>
 #include <map>
-#include "Attribute.h"
 #include "AttributeUniValue.h"
 #include "AttributeMultiValue.h"
+#include "SupportTypes.h"
 using namespace std;
 
-class Component {
+class Block {
 
 public:
 
-    struct Port {
-
-        enum PortType {
-            Base = 0,
-            Condition,
-            True,
-            False
-        };
-
-        string name;
-        int delay;
-        PortType type;
-
-        string getName();
-        int getDelay();
-        PortType getType();
-        void setName(string name);
-        void setDelay(int delay);
-        void setType(PortType type);
-
-    };
-
-    enum BlockType {
-        Operator = 0,
-        Buffer,
-        Constant,
-        Fork,
-        Merge,
-        Select,
-        Branch,
-        Demux,
-        Entry,
-        Exit
-    };
-
-    Component();
-    Component(const string &blockName, BlockType type);
-    ~Component();
+    Block();
+    Block(const string &blockName, BlockType type);
+    ~Block();
 
     string getBlockName();
     void setBlockName(const string &blockName);
@@ -63,10 +28,6 @@ public:
     virtual void printBlock(ofstream &file);
     void closeBlock(ofstream &file);
 
-    friend ofstream &operator << (ofstream &out, const Component::Port &p); 
-    friend ofstream &operator << (ofstream &out, Component::BlockType blockType);
-    friend bool operator == (const Component::Port &p1, const Component::Port &p2);
-    
 private:
 
     string blockName;
@@ -76,7 +37,8 @@ private:
     
 };
 
-class Operator : public Component {
+
+class Operator : public Block {
 
 public:
     
@@ -94,7 +56,7 @@ private:
 };
 
 
-class Buffer : public Component {
+class Buffer : public Block {
 
 public:
 
@@ -110,8 +72,9 @@ private:
 
 };
 
+
 template <typename T>
-class Constant : public Component {
+class Constant : public Block {
 
 public:
 
@@ -131,14 +94,13 @@ private:
 };
 
 template <typename T>
-Constant<T>::Constant() : Component(), constant("value") {}
+Constant<T>::Constant() : Block(), constant("value") {}
 
 template <typename T>
 Constant<T>::Constant(const string &name, T constant)
-                        : Component(name, BlockType::Constant), constant("value") {
-    Port out = {"out", 0, Port::PortType::Base};
-    addOutputPort(out);
-    this->constant.setValue(constant);
+                        : Block(name, BlockType::Constant_Block), 
+                        constant("value", constant) {
+    addOutputPort(Port("out"));
 }
 
 template <typename T>
@@ -156,16 +118,13 @@ void Constant<T>::setConstant(T constant) {
 
 template <typename T>
 void Constant<T>::printBlock(ofstream &file) {
-    Component::printBlock(file);
+    Block::printBlock(file);
     file << ", ";
     constant.printAttribute(file);
 }
 
 
-
-
-
-class Fork : public Component {
+class Fork : public Block {
 
 public:
 
@@ -178,7 +137,7 @@ private:
 };
 
 
-class Merge : public Component {
+class Merge : public Block {
 
 public:
 
@@ -191,7 +150,7 @@ private:
 };
 
 
-class Select : public Component {
+class Select : public Block {
 
 public:
 
@@ -203,7 +162,7 @@ private:
 
 };
 
-class Branch : public Component {
+class Branch : public Block {
 
 public:
 
@@ -216,7 +175,7 @@ private:
 };
 
 
-class Demux : public Component {
+class Demux : public Block {
 
 public:
 
@@ -229,7 +188,7 @@ private:
 };
 
 
-class Entry : public Component {
+class Entry : public Block {
 
 public:
 
@@ -242,7 +201,7 @@ private:
 };
 
 
-class Exit : public Component {
+class Exit : public Block {
 
 public:
 
@@ -255,4 +214,4 @@ private:
 };
 
 
-#endif // COMPONENTS_H
+#endif // BlockS_H

@@ -3,7 +3,6 @@
 
 
 Channel::Channel() {
-
     portOut = "";
     portIn = "";
     blockOut = "";
