@@ -1,6 +1,6 @@
 
 #include "Block.h"
-
+#include <iostream>
 
 Block::Block() : blockType("type"), inputPorts("in"), outputPorts("out")  {
     blockName = "";
@@ -33,6 +33,65 @@ void Block::setBlockType(BlockType blockType) {
     this->blockType.setValue(blockType);
 }
 
+
+
+
+string Block::getInPortName(int index) {
+    return inputPorts.getValue(index).getName();
+}
+
+int Block::getInPortDelay(int index) {
+    return inputPorts.getValue(index).getDelay();
+}
+
+Port::PortType Block::getInPortType(int index) {
+    return inputPorts.getValue(index).getType();
+}
+
+void Block::setInPortName(int index, const string &name) {
+    Port& p = inputPorts.getValue(index);
+    p.setName(name);
+}
+
+void Block::setInPortDelay(int index, int delay) {
+    Port& p = inputPorts.getValue(index);
+    p.setDelay(delay);
+}
+
+void Block::setInPortType(int index, Port::PortType type) {
+    Port& p = inputPorts.getValue(index);
+    p.setType(type);
+}
+
+string Block::getOutPortName(int index) {
+    return outputPorts.getValue(index).getName();
+}
+
+int Block::getOutPortDelay(int index) {
+    return outputPorts.getValue(index).getDelay();
+}
+
+Port::PortType Block::getOutPortType(int index) {
+    return outputPorts.getValue(index).getType();
+}
+
+void Block::setOutPortName(int index, const string &name) {
+    Port& p = outputPorts.getValue(index);
+    p.setName(name);
+}
+
+void Block::setOutPortDelay(int index, int delay) {
+    Port& p = outputPorts.getValue(index);
+    p.setDelay(delay);
+}
+
+void Block::setOutPortType(int index, Port::PortType type) {
+    Port& p = outputPorts.getValue(index);
+    p.setType(type);
+}
+
+
+
 void Block::addInputPort(const Port &inPort) {
     inputPorts.addValue(inPort);
 }
@@ -57,7 +116,7 @@ void Block::closeBlock(ofstream &file) {
 
 Operator::Operator() : Block(), latency("latency"), II("II") {}
 
-Operator::Operator(const string &name, int numInPorts, int latency, int II) : 
+Operator::Operator(const string &name, int latency, int II, int numInPorts) : 
                 Block(name, BlockType::Operator_Block), 
                 latency("latency", latency), II("II", II) {
     for (int i = 1; i <= numInPorts; ++i) {
@@ -67,6 +126,22 @@ Operator::Operator(const string &name, int numInPorts, int latency, int II) :
 }
 
 Operator::~Operator() {}
+
+int Operator::getLatency() {
+    return latency.getValue();
+}
+
+int Operator::getII() {
+    return II.getValue();
+}
+
+void Operator::setLatency(int latency) {
+    this->latency.setValue(latency);
+}
+
+void Operator::setII(int II) {
+    this->II.setValue(II);
+}
 
 void Operator::printBlock(ofstream &file) {
     Block::printBlock(file);
@@ -87,6 +162,22 @@ Buffer::Buffer(const string &name, int slots, bool transparent) :
 }
 
 Buffer::~Buffer() {}
+
+int Buffer::getNumSlots() {
+    return slots.getValue();
+}
+
+bool Buffer::getTransparent() {
+    return transparent.getValue();
+}
+
+void Buffer::setNumSlots(int slots) {
+    this->slots.setValue(slots);
+}
+
+void Buffer::setTransparent(bool transparent) {
+    this->transparent.setValue(transparent);
+}
 
 void Buffer::printBlock(ofstream &file) {
     Block::printBlock(file);

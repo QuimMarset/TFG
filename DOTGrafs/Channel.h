@@ -2,6 +2,7 @@
 #define CHANNEL_H
 
 #include <string>
+#include <fstream>
 using namespace std;
 
 
@@ -10,8 +11,8 @@ class Channel {
 public:
 
     Channel();
-    Channel(const string &portOut, const string &portIn, 
-                const string &blockOut, const string &blockIn);
+    Channel(const string &blockOut, const string &blockIn, 
+                const string &portOut, const string &portIn);
     ~Channel();
 
     void setPortOut(const string &portOut);
@@ -23,6 +24,8 @@ public:
     string getPortIn();
     string getBlockOut();
     string getBlockIn();
+
+    void printChannel(ofstream &file);
 
 private:
 

@@ -1,8 +1,16 @@
 digraph "DataFlow Graph for 'prova' function" {
 	label="DataFlow Graph for 'prova' function";
 
+subgraph cluster_bb1 { 
 	const1[shape=oval, label="const1", type = "Constant", in = "", out = "out:0", value = "3"];
+	branch1[shape=oval, label="branch1", type = "Branch", in = "in:16 inCondition?:0", out = "outTrue+:0 outFalse-:0"];
+	label = "bb1"
+}
+subgraph cluster_bb2 { 
 	const2[shape=oval, label="const2", type = "Constant", in = "", out = "out:0", value = "3.2"];
-	branch1[shape=oval, label="branch1", type = "Branch", in = "in:0 inCondition?:0", out = "outTrue+:0 outFalse-:0"];
+	label = "bb2"
+}
+
+	const1 -> branch1 [from = out, to = in];
 
 }

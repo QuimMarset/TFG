@@ -14,31 +14,47 @@ DFGraph::DFGraph(const string& functionName) {
 
 DFGraph::~DFGraph() {
     functionName = "";
-    nodes.clear();
+    //nodes.clear();
+    clusters.clear();
     edges.clear();
     DOTFile.close();
 }
 
-void DFGraph::addNode(Block* node) {
-    nodes.push_back(node);
-}
-void DFGraph::addEdge(Channel &edge) {
-    edges.push_back(edge);
+string DFGraph::getFunctionName() {
+    return functionName;
 }
 
+void DFGraph::setFunctionName(const string &functionName) {
+    this->functionName = functionName;
+}
+
+// void DFGraph::addNode(Block* node) {
+//     nodes.push_back(node);
+// }
+
+void DFGraph::addCluster(Cluster* cluster) {
+    clusters.push_back(cluster);
+}
+
+void DFGraph::addEdge(Channel* edge) {
+    edges.push_back(edge);
+}
 
 void DFGraph::printGraph() {
 
     DOTFile << "digraph \"DataFlow Graph for '" + functionName + "' function\" {" << endl;
     DOTFile << "\tlabel=\"DataFlow Graph for '" + functionName + "' function\";" << endl;
     DOTFile << endl;
-    for (Block* node : nodes) {
-        DOTFile << "\t";
-        node->printBlock(DOTFile);
-        node->closeBlock(DOTFile);
+    for (Cluster* cluster : clusters) {
+        // DOTFile << "\t";
+        // node->printBlock(DOTFile);
+        // node->closeBlock(DOTFile);
+        cluster->printBasicBlock(DOTFile);
     }
-    for (Channel &edge : edges) {
-        
+    DOTFile << endl;
+    for (Channel* edge : edges) {
+        DOTFile << "\t";
+        edge->printChannel(DOTFile);
     }
     DOTFile << endl;
     DOTFile << "}" << endl;

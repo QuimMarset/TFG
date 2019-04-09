@@ -8,8 +8,8 @@ Channel::Channel() {
     blockOut = "";
     blockIn = "";
 }
-Channel::Channel(const string &portOut, const string &portIn, 
-                    const string &blockOut, const string &blockIn) {
+Channel::Channel(const string &blockOut, const string &blockIn, 
+                    const string &portOut, const string &portIn) {
     this->portOut = portOut;
     this->portIn = portIn;
     this->blockOut = blockOut;
@@ -48,4 +48,11 @@ string Channel::getBlockOut() {
 
 string Channel::getBlockIn() {
     return blockIn;
+}
+
+void Channel::printChannel(ofstream &file) {
+    file << blockOut <<  " -> " << blockIn;
+    file << " [from = " << portOut;
+    file << ", to = " << portIn << "];";
+    file << endl;  
 }

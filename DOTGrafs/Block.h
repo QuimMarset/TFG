@@ -19,14 +19,31 @@ public:
     ~Block();
 
     string getBlockName();
-    void setBlockName(const string &blockName);
     BlockType getBlockType();
+    void setBlockName(const string &blockName);
     void setBlockType(BlockType blockType);
-    void addInputPort(const Port &inPort);
-    void addOutputPort(const Port &outPort);
+
+    string getInPortName(int index);
+    int getInPortDelay(int index);
+    Port::PortType getInPortType(int index);
+    void setInPortName(int index, const string &name);
+    void setInPortDelay(int index, int delay);
+    void setInPortType(int index, Port::PortType type);
+
+    string getOutPortName(int index);
+    int getOutPortDelay(int index);
+    Port::PortType getOutPortType(int index);
+    void setOutPortName(int index, const string &name);
+    void setOutPortDelay(int index, int delay);
+    void setOutPortType(int index, Port::PortType type);
 
     virtual void printBlock(ofstream &file);
     void closeBlock(ofstream &file);
+
+protected:
+
+    void addInputPort(const Port &inPort);
+    void addOutputPort(const Port &outPort);
 
 private:
 
@@ -43,8 +60,13 @@ class Operator : public Block {
 public:
     
     Operator();
-    Operator(const string &name, int numInPorts, int latency, int II);
+    Operator(const string &name, int latency, int II, int numInPorts = 2);
     ~Operator();
+
+    int getLatency();
+    int getII();
+    void setLatency(int latency);
+    void setII(int II);
 
     void printBlock(ofstream &file) override;
 
@@ -63,6 +85,12 @@ public:
     Buffer();
     Buffer(const string &name, int slots, bool transparent);
     ~Buffer();
+
+    int getNumSlots();
+    bool getTransparent();
+    void setNumSlots(int slots);
+    void setTransparent(bool transparent);
+
     void printBlock(ofstream &file) override;
 
 private:
@@ -108,12 +136,12 @@ Constant<T>::~Constant() {}
 
 template <typename T>
 T Constant<T>::getConstant() {
-    return constant;
+    return constant.getValue();
 }
 
 template <typename T>
 void Constant<T>::setConstant(T constant) {
-    this->constant = constant;
+    this->constant.setValue(constant);
 }
 
 template <typename T>
@@ -142,7 +170,7 @@ class Merge : public Block {
 public:
 
     Merge();
-    Merge(const string &name, int numInPorts);
+    Merge(const string &name, int numInPorts = 2);
     ~Merge();
 
 private:

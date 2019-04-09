@@ -15,7 +15,7 @@ public:
     AttributeUniValue(const string &name, T value);
     ~AttributeUniValue();
 
-    T &getValue();
+    T& getValue();
     void setValue(T value);
     
     void printValue(ofstream &file);
@@ -40,7 +40,7 @@ template <typename T>
 AttributeUniValue<T>::~AttributeUniValue() {}
 
 template <typename T>
-T &AttributeUniValue<T>::getValue() {
+T& AttributeUniValue<T>::getValue() {
     return value;
 }
 
