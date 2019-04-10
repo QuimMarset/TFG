@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include <map>
 #include "AttributeUniValue.h"
 #include "AttributeMultiValue.h"
 #include "SupportTypes.h"
@@ -37,8 +36,9 @@ public:
     void setOutPortDelay(int index, int delay);
     void setOutPortType(int index, Port::PortType type);
 
-    virtual void printBlock(ofstream &file);
-    void closeBlock(ofstream &file);
+    virtual void printBlock(ostream &file) const;
+    void closeBlock(ostream &file) const;
+    friend ostream &operator << (ostream& out, const Block &block);
 
 protected:
 
@@ -68,7 +68,7 @@ public:
     void setLatency(int latency);
     void setII(int II);
 
-    void printBlock(ofstream &file) override;
+    void printBlock(ostream &file) const override;
 
 private:
 
@@ -91,7 +91,7 @@ public:
     void setNumSlots(int slots);
     void setTransparent(bool transparent);
 
-    void printBlock(ofstream &file) override;
+    void printBlock(ostream &file) const override;
 
 private:
 
@@ -113,7 +113,7 @@ public:
     T getConstant();
     void setConstant(T constant);
 
-    void printBlock(ofstream &file) override;
+    void printBlock(ostream &file) const override;
 
 private:
 
@@ -145,7 +145,7 @@ void Constant<T>::setConstant(T constant) {
 }
 
 template <typename T>
-void Constant<T>::printBlock(ofstream &file) {
+void Constant<T>::printBlock(ostream &file) const {
     Block::printBlock(file);
     file << ", ";
     constant.printAttribute(file);
@@ -157,7 +157,7 @@ class Fork : public Block {
 public:
 
     Fork();
-    Fork(const string &name, int numOutPorts);
+    Fork(const string &name, int numOutPorts = 2);
     ~Fork();
 
 private:
@@ -208,7 +208,7 @@ class Demux : public Block {
 public:
 
     Demux();
-    Demux(const string &name, int numControlPorts);
+    Demux(const string &name, int numControlPorts = 1);
     ~Demux();
 
 private:

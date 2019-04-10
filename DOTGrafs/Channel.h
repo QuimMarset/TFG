@@ -25,7 +25,9 @@ public:
     string getBlockOut();
     string getBlockIn();
 
-    void printChannel(ofstream &file);
+    void printChannel(ostream &file) const;
+
+    friend ostream &operator << (ostream &out, const Channel &channel);
 
 private:
 

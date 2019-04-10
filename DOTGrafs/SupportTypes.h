@@ -25,10 +25,10 @@ class Port {
 public:
 
     enum PortType {
-            Base = 0,
-            Condition,
-            True,
-            False
+        Base = 0,
+        Condition,
+        True,
+        False
     };
 
     Port();

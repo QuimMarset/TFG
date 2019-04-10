@@ -50,9 +50,14 @@ string Channel::getBlockIn() {
     return blockIn;
 }
 
-void Channel::printChannel(ofstream &file) {
+void Channel::printChannel(ostream &file) const {
     file << blockOut <<  " -> " << blockIn;
     file << " [from = " << portOut;
     file << ", to = " << portIn << "];";
     file << endl;  
+}
+
+ostream &operator << (ostream &out, const Channel &channel) {
+    channel.printChannel(out);
+    return out;
 }

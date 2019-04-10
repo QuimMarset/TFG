@@ -19,11 +19,11 @@ void Attribute::setName(const string &name) {
     this->name = name;
 }
 
-void Attribute::printName(ofstream &file) {
+void Attribute::printName(ostream &file) const {
     file << name;
 }
 
-void Attribute::printAttribute(ofstream &file) {
+void Attribute::printAttribute(ostream &file) const {
     printName(file);
     file << " = \"";
     printValue(file);

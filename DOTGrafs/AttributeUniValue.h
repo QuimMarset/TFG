@@ -18,7 +18,7 @@ public:
     T& getValue();
     void setValue(T value);
     
-    void printValue(ofstream &file);
+    void printValue(ostream &file) const;
 
 private:
 
@@ -50,7 +50,7 @@ void AttributeUniValue<T>::setValue(T value) {
 }
 
 template <typename T>
-void AttributeUniValue<T>::printValue(ofstream &file) {
+void AttributeUniValue<T>::printValue(ostream &file) const {
     file << value;
 }
 

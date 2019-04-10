@@ -46,9 +46,6 @@ void DFGraph::printGraph() {
     DOTFile << "\tlabel=\"DataFlow Graph for '" + functionName + "' function\";" << endl;
     DOTFile << endl;
     for (Cluster* cluster : clusters) {
-        // DOTFile << "\t";
-        // node->printBlock(DOTFile);
-        // node->closeBlock(DOTFile);
         cluster->printBasicBlock(DOTFile);
     }
     DOTFile << endl;

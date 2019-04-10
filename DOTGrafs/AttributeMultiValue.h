@@ -25,7 +25,7 @@ public:
     void setValue(int index, T value);
     void clearValues();
 
-    void printValue(ofstream &file);
+    void printValue(ostream &file) const;
 
 private:
 
@@ -84,7 +84,7 @@ void AttributeMultiValue<T>::setValue(int index, T value) {
 }
 
 template <typename T>
-void AttributeMultiValue<T>::printValue(ofstream &file) {
+void AttributeMultiValue<T>::printValue(ostream &file) const {
     for (unsigned int i = 0; i < values.size(); ++i) {
         file << values[i];
         if (i < values.size()-1) {

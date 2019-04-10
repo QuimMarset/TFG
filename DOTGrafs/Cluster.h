@@ -16,7 +16,8 @@ public:
 
     void addBlock(Block* block);
 
-    void printBasicBlock(ofstream &file);
+    void printBasicBlock(ostream &file) const;
+    friend ostream &operator << (ostream &file, const Cluster &cluster);
 
 private:
 

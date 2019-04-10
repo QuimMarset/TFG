@@ -17,11 +17,11 @@ public:
 
     string getName();
     void setName(const string &name);
-    void printName(ofstream &file);
+    void printName(ostream &file) const;
 
-    virtual void printValue(ofstream &file) = 0;
+    virtual void printValue(ostream &file) const = 0;
 
-    void printAttribute(ofstream &file);
+    void printAttribute(ostream &file) const;
 
 private:
 

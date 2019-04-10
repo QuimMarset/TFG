@@ -1,2 +1,6 @@
 # Ignore .vscode folder
 .vscode/
+# Ignore .o files
+*.o
+# Ignore executable
+Test

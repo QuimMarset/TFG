@@ -100,7 +100,7 @@ void Block::addOutputPort(const Port &outPort) {
     outputPorts.addValue(outPort);
 }
 
-void Block::printBlock(ofstream &file) {
+void Block::printBlock(ostream &file) const {
     file << blockName + "[shape=oval, label=\"" + blockName + "\", ";
     blockType.printAttribute(file);
     file << ", ";
@@ -109,10 +109,15 @@ void Block::printBlock(ofstream &file) {
     outputPorts.printAttribute(file);
 }
 
-void Block::closeBlock(ofstream &file) {
+void Block::closeBlock(ostream &file) const {
     file << "];" << endl;
 }
 
+ostream &operator << (ostream& out, const Block &block) {
+    block.printBlock(out);
+    block.closeBlock(out);
+    return out;
+}
 
 Operator::Operator() : Block(), latency("latency"), II("II") {}
 
@@ -143,7 +148,7 @@ void Operator::setII(int II) {
     this->II.setValue(II);
 }
 
-void Operator::printBlock(ofstream &file) {
+void Operator::printBlock(ostream &file) const {
     Block::printBlock(file);
     file << ", ";
     latency.printAttribute(file);
@@ -179,7 +184,7 @@ void Buffer::setTransparent(bool transparent) {
     this->transparent.setValue(transparent);
 }
 
-void Buffer::printBlock(ofstream &file) {
+void Buffer::printBlock(ostream &file) const {
     Block::printBlock(file);
     file << ", ";
     slots.printAttribute(file);
