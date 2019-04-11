@@ -1,0 +1,59 @@
+digraph "DataFlow Graph for 'Fact5' function" {
+	label="DataFlow Graph for 'Fact5' function";
+
+	subgraph cluster_Entry { 
+		fact[shape = oval, label = "fact", type = Constant, out = "out:0", value = 1];
+		i[shape = oval, label = "i", type = Constant, out = "out:0", value = 2];
+		n[shape = oval, label = "n", type = Constant, out = "out:0", value = 5];
+		label = "Entry"
+	}
+	subgraph cluster_While_cond { 
+		mergeFact[shape = oval, label = "mergeFact", type = Merge, in = "in1:0 in2:0", out = "out:0"];
+		mergeI[shape = oval, label = "mergeI", type = Merge, in = "in1:0 in2:0", out = "out:0"];
+		mergeN[shape = oval, label = "mergeN", type = Merge, in = "in1:0 in2:0", out = "out:0"];
+		forkN[shape = oval, label = "forkN", type = Fork, in = "in:0", out = "out1:0 out2:0"];
+		forkI[shape = oval, label = "forkI", type = Fork, in = "in:0", out = "out1:0 out2:0"];
+		opIcmp[shape = oval, label = "opIcmp", type = Operator, in = "in1:0 in2:0", out = "out:0"];
+		forkCmp[shape = oval, label = "forkCmp", type = Fork, in = "in:0", out = "out1:0 out2:0 out3:0"];
+		branchN[shape = oval, label = "branchN", type = Branch, in = "in:0 inCondition?:1", out = "outTrue+:0 outFalse-:0"];
+		branchI[shape = oval, label = "branchI", type = Branch, in = "in:0 inCondition?:1", out = "outTrue+:0 outFalse-:0"];
+		branchFact[shape = oval, label = "branchFact", type = Branch, in = "in:0 inCondition?:1", out = "outTrue+:0 outFalse-:0"];
+		label = "While_cond"
+	}
+	subgraph cluster_While_body { 
+		forkI2[shape = oval, label = "forkI2", type = Fork, in = "in:0", out = "out1:0 out2:0"];
+		opAdd[shape = oval, label = "opAdd", type = Operator, in = "in1:0 in2:0", out = "out:0"];
+		opMul[shape = oval, label = "opMul", type = Operator, in = "in1:0 in2:0", out = "out:0", latency = 2, II = 0];
+		constIncr[shape = oval, label = "constIncr", type = Constant, out = "out:0", value = 1];
+		label = "While_body"
+	}
+	subgraph cluster_While_end { 
+		opRet[shape = oval, label = "opRet", type = Operator, in = "in1:0"];
+		label = "While_end"
+	}
+
+	fact -> mergeFact [from = out, to = in1];
+	i -> mergeI [from = out, to = in1];
+	n -> mergeN [from = out, to = in1];
+	mergeN -> forkN [from = out, to = in];
+	mergeI -> forkI [from = out, to = in];
+	forkN -> opIcmp [from = out1, to = in1];
+	forkN -> branchN [from = out2, to = in];
+	forkI -> opIcmp [from = ou1, to = in2];
+	forkI -> branchI [from = out2, to = in];
+	mergeFact -> branchFact [from = out, to = in];
+	opIcmp -> forkCmp [from = out, to = in];
+	forkCmp -> branchN [from = out1, to = inCondition];
+	forkCmp -> branchI [from = out2, to = inCondition];
+	forkCmp -> branchFact [from = out3, to = inCondition];
+	branchN -> mergeN [from = outTrue, to = in2];
+	branchI -> forkI2 [from = outTrue, to = in];
+	branchFact -> opMul [from = outTrue, to = in1];
+	branchFact -> opRet [from = outFalse, to = in];
+	constIncr -> opAdd [from = out, to = in1];
+	forkI2 -> opAdd [from = out1, to = in2];
+	forkI2 -> opMul [from = out2, to = in2];
+	opAdd -> mergeI [from = out, to = in2];
+	opMul -> mergeFact [from = out, to = in2];
+
+}

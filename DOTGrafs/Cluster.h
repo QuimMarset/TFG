@@ -14,6 +14,9 @@ public:
     Cluster(const string &basicBlockName);
     ~Cluster();
 
+    string getBasicBlockName();
+    void setBasicBlockName(const string &basicBlockName);
+
     void addBlock(Block* block);
 
     void printBasicBlock(ostream &file) const;

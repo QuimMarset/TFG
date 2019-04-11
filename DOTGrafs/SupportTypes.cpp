@@ -44,39 +44,61 @@ ostream &operator << (ostream &out, BlockType blockType) {
 
 Port::Port() {
     name = "";
-    delay = 0;
     type = Base;
+    width = 0;
 }
 
-Port::Port(const string &name, Port::PortType type, int delay) {
+Port::Port(const string &name, Port::PortType type, int width, int delay) {
     this->name = name;
-    this->delay = delay;
     this->type = type;
+    this->width = width;
+    this->delay = delay;
+}
+
+Port::Port(const Port &port) {
+    name = port.name;
+    type = port.type;
+    width = port.width;
+    delay = port.delay;
 }
 
 Port::~Port() {
     name = "";
-    delay = 0;
     type = Base;
+    width = 0;
+    delay = 0;
 }
 
-string Port::getName() {
+string Port::getName() const {
     return name;
 }
-int Port::getDelay() {
-    return delay;
-}
-Port::PortType Port::getType() {
+
+Port::PortType Port::getType() const {
     return type;
 }
+
+int Port::getWidth() const {
+    return width;
+}
+
+int Port::getDelay() const {
+    return delay;
+}
+
 void Port::setName(string name) {
     this->name = name;
 }
-void Port::setDelay(int delay) {
-    this->delay = delay;
-}
+
 void Port::setType(Port::PortType type) {
     this->type = type;
+}
+
+void Port::setWidth(int width) {
+    this->width = width;
+}
+
+void Port::setDelay(int delay) {
+    this->delay = delay;
 }
 
 ostream &operator << (ostream &out, const Port &p) {
@@ -95,7 +117,7 @@ ostream &operator << (ostream &out, const Port &p) {
         default:
             break;
     }
-    out << ":" << p.delay;
+    out << ":" << p.width;
     return out;
 }
 

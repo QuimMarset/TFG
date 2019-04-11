@@ -8,8 +8,7 @@ DFGraph::DFGraph() {
 
 DFGraph::DFGraph(const string& functionName) {
     this->functionName = functionName;
-    string fileName = functionName + ".dot";
-    DOTFile.open(fileName);   
+    DOTFile.open(functionName + ".dot");   
 }
 
 DFGraph::~DFGraph() {

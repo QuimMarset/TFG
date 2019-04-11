@@ -1,9 +1,10 @@
-#ifndef BlockS_H
-#define BlockS_H
+#ifndef Blocks_H
+#define Blocks_H
 
 #include <vector>
 #include <string>
 #include <fstream>
+#include <assert.h>
 #include "AttributeUniValue.h"
 #include "AttributeMultiValue.h"
 #include "SupportTypes.h"
@@ -14,27 +15,21 @@ class Block {
 public:
 
     Block();
-    Block(const string &blockName, BlockType type);
+    Block(const string &blockName, BlockType type, int defaultPortWidth = 0, 
+        int blockDelay = 0);
     ~Block();
 
     string getBlockName();
     BlockType getBlockType();
+    int getDefaultPortWidth();
+    int getBlockDelay();
     void setBlockName(const string &blockName);
     void setBlockType(BlockType blockType);
+    void setDefaultPortWidth(int defaultPortWidth);
+    void setBlockDelay(int blockDelay);
 
-    string getInPortName(int index);
-    int getInPortDelay(int index);
-    Port::PortType getInPortType(int index);
-    void setInPortName(int index, const string &name);
-    void setInPortDelay(int index, int delay);
-    void setInPortType(int index, Port::PortType type);
-
-    string getOutPortName(int index);
-    int getOutPortDelay(int index);
-    Port::PortType getOutPortType(int index);
-    void setOutPortName(int index, const string &name);
-    void setOutPortDelay(int index, int delay);
-    void setOutPortType(int index, Port::PortType type);
+    virtual int getDataPortsWidth();
+    virtual void setDataPortsWidth(int width);
 
     virtual void printBlock(ostream &file) const;
     void closeBlock(ostream &file) const;
@@ -42,15 +37,30 @@ public:
 
 protected:
 
+    int getInDataPortWidth(int index);
+    int getOutDataPortWidth(int index);
+    void setInDataPortWidth(int index, int width);
+    void setOutDataPortWidth(int index, int width);
+    
+    int getInPortDelay(int index);
+    int getOutPortDelay(int index);
+    void setInPortDelay(int index, int delay);
+    void setOutPortDelay(int index, int delay);
+
     void addInputPort(const Port &inPort);
     void addOutputPort(const Port &outPort);
+
+    int getNumInPorts();
+    int getNumOutPorts();
 
 private:
 
     string blockName;
-    AttributeUniValue <BlockType> blockType;
-    AttributeMultiValue <Port> inputPorts;
-    AttributeMultiValue <Port> outputPorts; 
+    BlockType blockType;
+    int defaultPortWidth;
+    int blockDelay;
+    vector <Port> inputPorts;
+    vector <Port> outputPorts;
     
 };
 
@@ -60,7 +70,8 @@ class Operator : public Block {
 public:
     
     Operator();
-    Operator(const string &name, int latency, int II, int numInPorts = 2);
+    Operator(const string &name, int numInPorts = 2, bool hasOutput = true, 
+        int latency = 0, int II = 0);
     ~Operator();
 
     int getLatency();
@@ -68,12 +79,17 @@ public:
     void setLatency(int latency);
     void setII(int II);
 
+    int getInDataPortDelay(int index);
+    int getOutDataPortDelay();
+    void setInDataPortDelay(int index, int delay);
+    void setOutDataPortDelay(int delay);
+
     void printBlock(ostream &file) const override;
 
 private:
 
-    AttributeUniValue<int> latency;
-    AttributeUniValue<int> II;
+    int latency;
+    int II;
 
 };
 
@@ -83,7 +99,7 @@ class Buffer : public Block {
 public:
 
     Buffer();
-    Buffer(const string &name, int slots, bool transparent);
+    Buffer(const string &name, int slots = 2, bool transparent = false);
     ~Buffer();
 
     int getNumSlots();
@@ -91,13 +107,17 @@ public:
     void setNumSlots(int slots);
     void setTransparent(bool transparent);
 
+    int getInDataPortDelay();
+    int getOutDataPortDelay();
+    void setInDataPortDelay(int delay);
+    void setOutDataPortDelay(int delay);
+
     void printBlock(ostream &file) const override;
 
 private:
 
-    AttributeUniValue<int> slots;
-    AttributeUniValue<bool> transparent;
-
+    int slots;
+    bool transparent;
 };
 
 
@@ -113,22 +133,28 @@ public:
     T getConstant();
     void setConstant(T constant);
 
+    int getDataPortsWidth() override;
+    void setDataPortsWidth(int width) override;
+
+    int getOutDataPortDelay();
+    void setOutDataPortDelay(int delay);
+
     void printBlock(ostream &file) const override;
 
 private:
 
-    AttributeUniValue<T> constant;
+    T constant;
 
 };
 
 template <typename T>
-Constant<T>::Constant() : Block(), constant("value") {}
+Constant<T>::Constant() : Block() {}
 
 template <typename T>
 Constant<T>::Constant(const string &name, T constant)
-                        : Block(name, BlockType::Constant_Block), 
-                        constant("value", constant) {
-    addOutputPort(Port("out"));
+                        : Block(name, BlockType::Constant_Block) {
+    this->constant = constant;
+    Block::addOutputPort(Port("out"));
 }
 
 template <typename T>
@@ -136,19 +162,39 @@ Constant<T>::~Constant() {}
 
 template <typename T>
 T Constant<T>::getConstant() {
-    return constant.getValue();
+    return constant;
 }
 
 template <typename T>
 void Constant<T>::setConstant(T constant) {
-    this->constant.setValue(constant);
+    this->constant = constant;
+}
+
+template <typename T>
+int Constant<T>::getDataPortsWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+template <typename T>
+void Constant<T>::setDataPortsWidth(int width) {
+    Block::setOutDataPortWidth(0, width);
+}
+
+template <typename T>
+int Constant<T>::getOutDataPortDelay() {
+    return Block::getOutPortDelay(0);
+}
+
+template <typename T>
+void Constant<T>::setOutDataPortDelay(int delay) {
+    Block::setOutPortDelay(0, delay);
 }
 
 template <typename T>
 void Constant<T>::printBlock(ostream &file) const {
     Block::printBlock(file);
     file << ", ";
-    constant.printAttribute(file);
+    file << "value = " << constant;
 }
 
 
@@ -159,6 +205,11 @@ public:
     Fork();
     Fork(const string &name, int numOutPorts = 2);
     ~Fork();
+
+    int getInDataPortDelay();
+    int getOutDataPortDelay(int index);
+    void setInDataPortDelay(int delay);
+    void setOutDataPortDelay(int index, int delay);
 
 private:
 
@@ -173,6 +224,11 @@ public:
     Merge(const string &name, int numInPorts = 2);
     ~Merge();
 
+    int getInDataPortDelay(int index);
+    int getOutDataPortDelay();
+    void setInDataPortDelay(int index, int delay);
+    void setOutDataPortDelay(int delay);
+
 private:
 
 };
@@ -186,6 +242,18 @@ public:
     Select(const string &name);
     ~Select();
 
+    void setDataPortsWidth(int width) override;
+
+    int getDataTruePortDelay();
+    int getDataFalsePortDelay();
+    int getConditionPortDelay();
+    int getDataOutPortDelay();
+    void setDataTruePortDelay(int delay);
+    void setDataFalsePortDelay(int delay);
+    void setConditionPortDelay(int delay);
+    void setDataOutPortDelay(int delay);
+
+
 private:
 
 };
@@ -197,6 +265,17 @@ public:
     Branch();
     Branch(const string &name);
     ~Branch();
+
+    void setDataPortsWidth(int width) override;
+
+    int getDataInPortDelay();
+    int getConditionPortDelay();
+    int getDataTruePortDelay();
+    int getDataFalsePortDelay();    
+    void setDataInPortDelay(int delay);
+    void setConditionPortDelay(int delay);
+    void setDataTruePortDelay(int delay);
+    void setDataFalsePortDelay(int delay);
 
 private:
 
@@ -210,6 +289,17 @@ public:
     Demux();
     Demux(const string &name, int numControlPorts = 1);
     ~Demux();
+
+    int getDataPortsWidth() override;
+    void setDataPortsWidth(int width) override;
+
+    int getControlPortDelay(int index);
+    int getDataInPortDelay();
+    int getDataOutPortDelay(int index);
+    void setControlPortDelay(int index, int delay);
+    void setDataInPortDelay(int delay);
+    void setDataOutPortDelay(int index, int delay);
+
 
 private:
 

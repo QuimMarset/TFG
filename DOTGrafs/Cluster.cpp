@@ -15,19 +15,27 @@ Cluster::~Cluster() {
     blocks.clear();
 }
 
+string Cluster::getBasicBlockName() {
+    return basicBlockName;
+}
+
+void Cluster::setBasicBlockName(const string &basicBlockName) {
+    this->basicBlockName = basicBlockName;
+}
+
 void Cluster::addBlock(Block* block) {
     blocks.push_back(block);
 }
 
 void Cluster::printBasicBlock(ostream &file) const {
-    file << "subgraph cluster_" << basicBlockName << " { " << endl;
+    file << "\tsubgraph cluster_" << basicBlockName << " { " << endl;
     for (Block* block : blocks) {
-        file << "\t";
+        file << "\t\t";
         block->printBlock(file);
         block->closeBlock(file);
     }
-    file << "\tlabel = \"" << basicBlockName << "\"" << endl;
-    file << "}" << endl;
+    file << "\t\tlabel = \"" << basicBlockName << "\"" << endl;
+    file << "\t}" << endl;
 }
 
 ostream &operator << (ostream &out, const Cluster &cluster) {

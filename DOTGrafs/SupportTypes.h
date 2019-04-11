@@ -32,15 +32,18 @@ public:
     };
 
     Port();
-    Port(const string &name, PortType type = Base, int delay = 0);
+    Port(const string &name, PortType type = Base, int width = 0, int delay = 0);
+    Port(const Port &port);
     ~Port();
 
-    string getName();
-    int getDelay();
-    PortType getType();
+    string getName() const;
+    PortType getType() const;
+    int getWidth() const;
+    int getDelay() const;
     void setName(string name);
-    void setDelay(int delay);
     void setType(PortType type);
+    void setWidth(int width);
+    void setDelay(int delay);
 
     friend bool operator == (const Port &p1, const Port &p2);
     friend ostream &operator << (ostream &out, const Port &p); 
@@ -48,8 +51,9 @@ public:
 private:
 
     string name;
-    int delay;
     PortType type;
+    int width;
+    int delay;
 
 };
 
