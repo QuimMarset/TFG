@@ -12,16 +12,16 @@ int main () {
     clust1.addBlock(&const2);
     clust1.addBlock(&const3);
 
-    Merge merge1("mergeFact", 2);
-    Merge merge2("mergeI", 2);
-    Merge merge3("mergeN", 2);
-    Fork fork1("forkN", 2);
-    Fork fork2("forkI", 2);
-    Operator op1("opIcmp", 2);
-    Fork fork3("forkCmp", 3);
-    Branch branch1("branchN");
-    Branch branch2("branchI");
-    Branch branch3("branchFact");
+    Merge merge1(2);
+    Merge merge2(2);
+    Merge merge3(2);
+    Fork fork1(2);
+    Fork fork2(2);
+    Operator op1(OperatorType::LET);
+    Fork fork3(3);
+    Branch branch1;
+    Branch branch2;
+    Branch branch3;
     Cluster clust2("While_cond");
     clust2.addBlock(&merge1);
     clust2.addBlock(&merge2);
@@ -35,18 +35,18 @@ int main () {
     clust2.addBlock(&branch3);
 
     Constant<int> const4("constIncr", 1);
-    Fork fork4("forkI2", 2);
-    Operator op2("opAdd", 2);
-    Operator op3("opMul", 2, 3, 2);
+    Fork fork4(2);
+    Operator op2(OperatorType::Add);
+    Operator op3(OperatorType::Mul);
     Cluster clust3("While_body");
     clust3.addBlock(&fork4);
     clust3.addBlock(&op2);
     clust3.addBlock(&op3);
     clust3.addBlock(&const4);
 
-    Operator op4("opRet", 1, false);
+    Exit ret;
     Cluster clust4("While_end");
-    clust4.addBlock(&op4);
+    clust4.addBlock(&ret);
 
     Channel channel1("fact", "mergeFact", "out", "in1");
     Channel channel2("i", "mergeI", "out", "in1");

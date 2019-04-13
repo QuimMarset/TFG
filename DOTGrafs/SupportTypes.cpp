@@ -2,6 +2,13 @@
 #include "SupportTypes.h"
 
 
+/*
+ * =================================
+ *  Enum BlockType
+ * =================================
+*/
+
+
 ostream &operator << (ostream &out, BlockType blockType) {
     switch (blockType)
     {
@@ -40,6 +47,143 @@ ostream &operator << (ostream &out, BlockType blockType) {
     }
     return out;
 }
+
+
+/*
+ * =================================
+ *  Enum OperatorType
+ * =================================
+*/
+
+int numberOperators = 17;
+
+ostream &operator << (ostream& out, OperatorType op) {
+    switch (op)
+    {
+        case Add:
+            out << "add";
+            break;
+        case Sub:
+            out << "sub";
+            break;
+        case Mul:
+            out << "mul";
+            break;
+        case Div:
+            out << "div";
+            break;
+        case Rem:
+            out << "rem";
+            break;
+        case ShiftL:
+            out << "shiftl";
+            break;
+        case ShiftR:
+            out << "shiftr";
+            break;
+        case And:
+            out << "and";
+            break;
+        case Or:
+            out << "or";
+            break;
+        case Not:
+            out << "not";
+            break;
+        case Xor:
+            out << "xor";
+            break;
+        case Eq:
+            out << "eq";
+            break;
+        case NEq:
+            out << "neq";
+            break;
+        case GT:
+            out << "gt";
+            break;
+        case LT:
+            out << "lt";
+            break;
+        case GET:
+            out << "geq";
+            break;
+        case LET:
+            out << "leq";
+            break;
+        default:
+            break;
+    }
+    return out;
+}
+
+
+string getOperatorName(OperatorType op) {
+    switch (op)
+    {
+        case Add:
+            return "Add";
+            break;
+        case Sub:
+            return "Sub";
+            break;
+        case Mul:
+            return "Mul";
+            break;
+        case Div:
+            return "Div";
+            break;
+        case Rem:
+            return "Rem";
+            break;
+        case ShiftL:
+            return "ShiftL";
+            break;
+        case ShiftR:
+            return "ShiftR";
+            break;
+        case And:
+            return "And";
+            break;
+        case Or:
+            return "Or";
+            break;
+        case Not:
+            return "Not";
+            break;
+        case Xor:
+            return "Xor";
+            break;
+        case Eq:
+            return "Eq";
+            break;
+        case NEq:
+            return "NEq";
+            break;
+        case GT:
+            return "GT";
+            break;
+        case LT:
+            return "LT";
+            break;
+        case GET:
+            return "GET";
+            break;
+        case LET:
+            return "LET";
+            break;
+        default:
+            break;
+    }
+    return "";
+}
+
+
+/*
+ * =================================
+ *  Class Port
+ * =================================
+*/
 
 
 Port::Port() {
@@ -117,7 +261,7 @@ ostream &operator << (ostream &out, const Port &p) {
         default:
             break;
     }
-    out << ":" << p.width;
+    if (p.width > -1) out << ":" << p.width;
     return out;
 }
 

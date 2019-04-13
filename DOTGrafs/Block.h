@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include <fstream>
 #include <assert.h>
 #include "AttributeUniValue.h"
@@ -14,9 +15,8 @@ class Block {
 
 public:
 
-    Block();
-    Block(const string &blockName, BlockType type, int defaultPortWidth = 0, 
-        int blockDelay = 0);
+    Block(const string &blockName, BlockType type, int defaultPortWidth, 
+        int blockDelay);
     ~Block();
 
     string getBlockName();
@@ -34,6 +34,7 @@ public:
     virtual void printBlock(ostream &file) const;
     void closeBlock(ostream &file) const;
     friend ostream &operator << (ostream& out, const Block &block);
+
 
 protected:
 
@@ -68,16 +69,16 @@ private:
 class Operator : public Block {
 
 public:
-    
-    Operator();
-    Operator(const string &name, int numInPorts = 2, bool hasOutput = true, 
+    Operator(OperatorType opType, int defaultPortWidth = -1, int blockDelay = 0, 
         int latency = 0, int II = 0);
     ~Operator();
 
     int getLatency();
     int getII();
+    OperatorType getOpType();
     void setLatency(int latency);
     void setII(int II);
+    void setOpType(OperatorType opType);
 
     int getInDataPortDelay(int index);
     int getOutDataPortDelay();
@@ -86,8 +87,12 @@ public:
 
     void printBlock(ostream &file) const override;
 
+    static void resetCounter();
+
 private:
 
+    static vector<int> instanceCounter;
+    OperatorType opType;
     int latency;
     int II;
 
@@ -98,8 +103,8 @@ class Buffer : public Block {
 
 public:
 
-    Buffer();
-    Buffer(const string &name, int slots = 2, bool transparent = false);
+    Buffer(int defaultPortWidth = -1, int blockDelay = 0, int slots = 2, 
+        bool transparent = false);
     ~Buffer();
 
     int getNumSlots();
@@ -114,8 +119,11 @@ public:
 
     void printBlock(ostream &file) const override;
 
+    static void resetCounter();
+
 private:
 
+    static int instanceCounter;
     int slots;
     bool transparent;
 };
@@ -126,8 +134,8 @@ class Constant : public Block {
 
 public:
 
-    Constant();
-    Constant(const string &name, T value);
+    Constant(const string &name, T value, int defaultPortWidth = -1, 
+        int blockDelay = 0);
     ~Constant();
 
     T getConstant();
@@ -136,24 +144,33 @@ public:
     int getDataPortsWidth() override;
     void setDataPortsWidth(int width) override;
 
+    int getInControlPortDelay();
     int getOutDataPortDelay();
+    void setInControlPortDelay(int delay);
     void setOutDataPortDelay(int delay);
 
     void printBlock(ostream &file) const override;
 
+    static void resetCounter();
+
 private:
 
+    static int instanceCounter;
     T constant;
 
 };
 
 template <typename T>
-Constant<T>::Constant() : Block() {}
+int Constant<T>::instanceCounter = 1;
 
 template <typename T>
-Constant<T>::Constant(const string &name, T constant)
-                        : Block(name, BlockType::Constant_Block) {
+Constant<T>::Constant(const string &name, T constant, int defaultPortWidth,
+        int blockDelay)
+        : Block("Constant" + to_string(instanceCounter) + name, 
+        BlockType::Constant_Block, defaultPortWidth, blockDelay) {
+    ++instanceCounter;
     this->constant = constant;
+    Block::addInputPort(Port("inControl"));
     Block::addOutputPort(Port("out"));
 }
 
@@ -186,8 +203,18 @@ int Constant<T>::getOutDataPortDelay() {
 }
 
 template <typename T>
+int Constant<T>::getInControlPortDelay() {
+    return Block::getInPortDelay(0);
+}
+
+template <typename T>
 void Constant<T>::setOutDataPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
+}
+
+template <typename T>
+void Constant<T>::setInControlPortDelay(int delay) {
+    Block::setInPortDelay(0, delay);
 }
 
 template <typename T>
@@ -202,8 +229,7 @@ class Fork : public Block {
 
 public:
 
-    Fork();
-    Fork(const string &name, int numOutPorts = 2);
+    Fork(int defaultPortWidth = -1, int blockDelay = 0, int numOutPorts = 2);
     ~Fork();
 
     int getInDataPortDelay();
@@ -211,7 +237,11 @@ public:
     void setInDataPortDelay(int delay);
     void setOutDataPortDelay(int index, int delay);
 
+    static void resetCounter();
+
 private:
+
+    static int instanceCounter;
 
 };
 
@@ -220,8 +250,7 @@ class Merge : public Block {
 
 public:
 
-    Merge();
-    Merge(const string &name, int numInPorts = 2);
+    Merge(int defaultPortWidth = -1, int blockDelay = 0, int numInPorts = 2);
     ~Merge();
 
     int getInDataPortDelay(int index);
@@ -229,7 +258,11 @@ public:
     void setInDataPortDelay(int index, int delay);
     void setOutDataPortDelay(int delay);
 
+    static void resetCounter();
+
 private:
+
+    static int instanceCounter;
 
 };
 
@@ -238,8 +271,7 @@ class Select : public Block {
 
 public:
 
-    Select();
-    Select(const string &name);
+    Select(int defaultPortWidth = -1, int blockDelay = 0);
     ~Select();
 
     void setDataPortsWidth(int width) override;
@@ -253,8 +285,11 @@ public:
     void setConditionPortDelay(int delay);
     void setDataOutPortDelay(int delay);
 
+    static void resetCounter();
 
 private:
+
+    static int instanceCounter;
 
 };
 
@@ -262,8 +297,7 @@ class Branch : public Block {
 
 public:
 
-    Branch();
-    Branch(const string &name);
+    Branch(int defaultPortWidth = -1, int blockDelay = 0);
     ~Branch();
 
     void setDataPortsWidth(int width) override;
@@ -277,7 +311,11 @@ public:
     void setDataTruePortDelay(int delay);
     void setDataFalsePortDelay(int delay);
 
+    static void resetCounter();
+
 private:
+
+    static int instanceCounter;
 
 };
 
@@ -286,8 +324,7 @@ class Demux : public Block {
 
 public:
 
-    Demux();
-    Demux(const string &name, int numControlPorts = 1);
+    Demux(int defaultPortWidth = -1, int blockDelay = 0, int numControlPorts = 1);
     ~Demux();
 
     int getDataPortsWidth() override;
@@ -300,8 +337,11 @@ public:
     void setDataInPortDelay(int delay);
     void setDataOutPortDelay(int index, int delay);
 
+    static void resetCounter();
 
 private:
+
+    static int instanceCounter;
 
 };
 
@@ -310,11 +350,14 @@ class Entry : public Block {
 
 public:
 
-    Entry();
-    Entry(const string &name);
+    Entry(int defaultPortWidth = -1, int blockDelay = 0);
     ~Entry();
+  
+    static void resetCounter();
 
 private:
+
+    static int instanceCounter;
 
 };
 
@@ -323,11 +366,14 @@ class Exit : public Block {
 
 public:
 
-    Exit();
-    Exit(const string &name);
+    Exit(int defaultPortWidth = -1, int blockDelay = 0);
     ~Exit();
 
+    static void resetCounter();
+
 private:
+
+    static int instanceCounter;
 
 };
 

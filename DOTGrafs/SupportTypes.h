@@ -6,19 +6,45 @@
 using namespace std;
 
 enum BlockType {
-        Operator_Block = 0,
-        Buffer_Block,
-        Constant_Block,
-        Fork_Block,
-        Merge_Block,
-        Select_Block,
-        Branch_Block,
-        Demux_Block,
-        Entry_Block,
-        Exit_Block
+    Operator_Block = 0,
+    Buffer_Block,
+    Constant_Block,
+    Fork_Block,
+    Merge_Block,
+    Select_Block,
+    Branch_Block,
+    Demux_Block,
+    Entry_Block,
+    Exit_Block
 };
 
 ostream &operator << (ostream &out, BlockType blockType);
+
+
+enum OperatorType {
+    Add = 0,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    ShiftL,
+    ShiftR,
+    And,
+    Or,
+    Not,
+    Xor,
+    Eq,
+    NEq,
+    GT,
+    LT,
+    GET,
+    LET
+};
+
+string getOperatorName(OperatorType op);
+ostream &operator << (ostream& out, OperatorType op);
+extern int numberOperators;
+
 
 class Port {
 
@@ -32,7 +58,7 @@ public:
     };
 
     Port();
-    Port(const string &name, PortType type = Base, int width = 0, int delay = 0);
+    Port(const string &name, PortType type = Base, int width = -1, int delay = 0);
     Port(const Port &port);
     ~Port();
 

@@ -11,14 +11,10 @@
 
 // Public function
 
-Block::Block() {
-    blockName = "";
-    defaultPortWidth = 0;
-    blockDelay = 0;
-}
-
 Block::Block(const string &blockName, BlockType blockType, int defaultPortWidth,
         int blockDelay) {
+    assert(blockDelay >= 0);
+    assert(defaultPortWidth >= -1);
     this->blockName = blockName;
     this->blockType = blockType;
     this->defaultPortWidth = defaultPortWidth;
@@ -58,13 +54,13 @@ void Block::setBlockType(BlockType blockType) {
 }
 
 void Block::setDefaultPortWidth(int defaultPortWidth) {
-    if (defaultPortWidth > 0) {
-        this->defaultPortWidth = defaultPortWidth;
-        setDataPortsWidth(defaultPortWidth);
-    }
+    assert(defaultPortWidth >= 0);
+    this->defaultPortWidth = defaultPortWidth;
+    setDataPortsWidth(defaultPortWidth);
 }
 
 void Block::setBlockDelay(int blockDelay) {
+    assert(blockDelay >= 0);
     this->blockDelay = blockDelay;
 }
 
@@ -82,9 +78,8 @@ void Block::setDataPortsWidth(int width) {
 }
 
 void Block::printBlock(ostream &file) const {
-    file << blockName << "[shape = oval, label = \"" << blockName <<
-        "\", type = " << blockType;
-    if (defaultPortWidth > 0) {
+    file << blockName << "[type = " << blockType;
+    if (defaultPortWidth >= 0) {
         file << ", channel_width = " << defaultPortWidth;
     }
     for (unsigned int i = 0; i < inputPorts.size(); ++i) {
@@ -203,18 +198,21 @@ void Block::setOutPortDelay(int index, int delay) {
  * =================================
 */
 
+vector<int> Operator::instanceCounter(numberOperators, 1);
 
-Operator::Operator() : Block() {}
-
-Operator::Operator(const string &name, int numInPorts, bool hasOutput, 
-                int latency, int II) : 
-                Block(name, BlockType::Operator_Block) {
+Operator::Operator(OperatorType opType, int defaultPortWidth, int blockDelay, 
+        int latency, int II) : 
+        Block(getOperatorName(opType) + to_string(instanceCounter[opType]), 
+        BlockType::Operator_Block, defaultPortWidth, blockDelay) {
+    assert(latency >= 0);
+    assert(II >= 0);
+    ++instanceCounter[opType];
+    this->opType = opType;
     this->latency = latency;
     this->II = II;
-    for (int i = 1; i <= numInPorts; ++i) {
-        Block::addInputPort(Port("in" + to_string(i)));
-    }
-    if (hasOutput) Block::addOutputPort(Port("out"));
+    Block::addInputPort(Port("in1"));
+    if (opType != OperatorType::Not) Block::addInputPort(Port("in2"));
+    Block::addOutputPort(Port("out"));
 }
 
 Operator::~Operator() {}
@@ -227,12 +225,22 @@ int Operator::getII() {
     return II;
 }
 
+OperatorType Operator::getOpType() {
+    return opType;
+}
+
 void Operator::setLatency(int latency) {
+    assert(latency >= 0);
     this->latency = latency;
 }
 
 void Operator::setII(int II) {
+    assert(II >= 0);
     this->II = II;
+}
+
+void Operator::setOpType(OperatorType opType) {
+    this->opType = opType;
 }
 
 int Operator::getInDataPortDelay(int index) {
@@ -241,7 +249,6 @@ int Operator::getInDataPortDelay(int index) {
 }
 
 int Operator::getOutDataPortDelay() {
-    assert(Block::getNumOutPorts() > 0);
     return Block::getOutPortDelay(0);
 }
 
@@ -251,15 +258,19 @@ void Operator::setInDataPortDelay(int index, int delay) {
 }
 
 void Operator::setOutDataPortDelay(int delay) {
-    assert(Block::getNumOutPorts() > 0);
     Block::setOutPortDelay(0, delay);
 }
 
 void Operator::printBlock(ostream &file) const {
     Block::printBlock(file);
-    if (latency > 0) {
-        file << ", latency = " << latency;
-        file << ", II = " << II;
+    file << ", op = " << opType;
+    file << ", latency = " << latency;
+    file << ", II = " << II;
+}
+
+void Operator::resetCounter() {
+    for (unsigned int i = 0; i < instanceCounter.size(); ++i) {
+        instanceCounter[i] = 1;
     }
 }
 
@@ -271,10 +282,13 @@ void Operator::printBlock(ostream &file) const {
 */
 
 
-Buffer::Buffer() : Block() {}
+int Buffer::instanceCounter = 1;
 
-Buffer::Buffer(const string &name, int slots, bool transparent) : 
-                Block(name, BlockType::Buffer_Block) {
+Buffer::Buffer(int defaultPortWidth, int blockDelay, int slots, bool transparent) : 
+        Block("Buffer" + to_string(instanceCounter), BlockType::Buffer_Block, 
+        defaultPortWidth, blockDelay) {
+    assert(slots > 0);
+    ++instanceCounter;
     this->slots = slots;
     this->transparent = transparent;
     Block::addInputPort(Port("in"));
@@ -292,6 +306,7 @@ bool Buffer::getTransparent() {
 }
 
 void Buffer::setNumSlots(int slots) {
+    assert(slots > 0);
     this->slots = slots;
 }
 
@@ -324,6 +339,10 @@ void Buffer::printBlock(ostream &file) const {
     else file << "false";
 }
 
+void Buffer::resetCounter() {
+    instanceCounter = 1;
+}
+
 
 /*
  * =================================
@@ -332,9 +351,13 @@ void Buffer::printBlock(ostream &file) const {
 */
 
 
-Fork::Fork() : Block() {}
+int Fork::instanceCounter = 1;
 
-Fork::Fork(const string &name, int numOutPorts) : Block(name, BlockType::Fork_Block) {
+Fork::Fork(int defaultPortWidth, int blockDelay, int numOutPorts) : 
+        Block("Fork" + to_string(instanceCounter), BlockType::Fork_Block,
+        defaultPortWidth, blockDelay) {
+    assert(numOutPorts > 0);
+    ++instanceCounter;
     Block::addInputPort(Port("in"));
     for ( int i = 1;i <= numOutPorts; ++i) {
         Block::addOutputPort(Port("out" + to_string(i)));
@@ -361,6 +384,10 @@ void Fork::setOutDataPortDelay(int index, int delay) {
     Block::setOutPortDelay(index, delay);
 }
 
+void Fork::resetCounter() {
+    instanceCounter = 1;
+}
+
 
 /*
  * =================================
@@ -369,9 +396,13 @@ void Fork::setOutDataPortDelay(int index, int delay) {
 */
 
 
-Merge::Merge() : Block() {}
+int Merge::instanceCounter = 1;
 
-Merge::Merge(const string &name, int numInPorts) : Block(name, BlockType::Merge_Block) {
+Merge::Merge(int defaultPortWidth, int blockDelay, int numInPorts) : 
+        Block("Merge" + to_string(instanceCounter), BlockType::Merge_Block,
+        defaultPortWidth, blockDelay) {
+    assert(numInPorts > 0);
+    ++instanceCounter;
     Block::addOutputPort(Port("out"));
     for ( int i = 1;i <= numInPorts; ++i) {
         Block::addInputPort(Port("in" + to_string(i)));
@@ -398,6 +429,10 @@ void Merge::setOutDataPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
 }
 
+void Merge::resetCounter() {
+    instanceCounter = 1;
+}
+
 
 /*
  * =================================
@@ -406,9 +441,12 @@ void Merge::setOutDataPortDelay(int delay) {
 */
 
 
-Select::Select() : Block() {}
+int Select::instanceCounter = 1;
 
-Select::Select(const string &name) : Block(name, BlockType::Select_Block) {
+Select::Select(int defaultPortWidth, int blockDelay) : 
+        Block("Select" + to_string(instanceCounter), BlockType::Select_Block,
+        defaultPortWidth, blockDelay) {
+    ++instanceCounter;
     Block::addInputPort(Port("inTrue", Port::PortType::True));
     Block::addInputPort(Port("inFalse", Port::PortType::False));
     Block::addInputPort(Port("inConditions", Port::PortType::Condition, 1));
@@ -455,6 +493,10 @@ void Select::setDataOutPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
 }
 
+void Select::resetCounter() {
+    instanceCounter = 1;
+}
+
 
 /*
  * =================================
@@ -463,9 +505,12 @@ void Select::setDataOutPortDelay(int delay) {
 */
 
 
-Branch::Branch() : Block() {}
+int Branch::instanceCounter = 1;
 
-Branch::Branch(const string &name) : Block(name, BlockType::Branch_Block) {
+Branch::Branch(int defaultPortWidth, int blockDelay) : 
+        Block("Branch" + to_string(instanceCounter), BlockType::Branch_Block, 
+        defaultPortWidth, blockDelay) {
+    ++instanceCounter;
     Block::addInputPort(Port("in"));
     Block::addInputPort(Port("inCondition", Port::PortType::Condition, 1));
     Block::addOutputPort(Port("outTrue", Port::PortType::True));
@@ -511,6 +556,10 @@ void Branch::setDataFalsePortDelay(int delay) {
     Block::setOutPortDelay(1, delay);
 }
 
+void Branch::resetCounter() {
+    instanceCounter = 1;
+}
+
 
 /*
  * =================================
@@ -519,9 +568,12 @@ void Branch::setDataFalsePortDelay(int delay) {
 */
 
 
-Demux::Demux() : Block() {}
+int Demux::instanceCounter = 1;
 
-Demux::Demux(const string &name, int numControlPorts) : Block(name, BlockType::Demux_Block) {
+Demux::Demux(int defaultPortWidth, int blockDelay, int numControlPorts) : 
+        Block("Demux" + to_string(instanceCounter), BlockType::Demux_Block, 
+        defaultPortWidth, blockDelay) {
+    ++instanceCounter;
     for (int i = 1; i <= numControlPorts; ++i) {
         Block::addInputPort(Port("control" + to_string(i)));
         Block::addOutputPort(Port("data" + to_string(i)));
@@ -573,6 +625,10 @@ void Demux::setDataOutPortDelay(int index, int delay) {
     Block::setInPortDelay(index, delay);
 }
 
+void Demux::resetCounter() {
+    instanceCounter = 1;
+}
+
 
 /*
  * =================================
@@ -581,11 +637,20 @@ void Demux::setDataOutPortDelay(int index, int delay) {
 */
 
 
-Entry::Entry() : Block() {}
+int Entry::instanceCounter = 1;
 
-Entry::Entry(const string &name) : Block(name, BlockType::Entry_Block) {}
+Entry::Entry(int defaultPortWidth, int blockDelay) : 
+        Block("Entry" + to_string(instanceCounter), 
+        BlockType::Entry_Block, defaultPortWidth, blockDelay) {
+    ++instanceCounter;
+    Block::addOutputPort(Port("controlOut"));
+}
 
 Entry::~Entry() {}
+
+void Entry::resetCounter() {
+    instanceCounter = 1;
+}
 
 
 /*
@@ -595,8 +660,16 @@ Entry::~Entry() {}
 */
 
 
-Exit::Exit() : Block() {}
+int Exit::instanceCounter = 1;
 
-Exit::Exit(const string &name) : Block(name, BlockType::Exit_Block) {}
+Exit::Exit(int defaultPortWdith, int blockDelay) : Block("Exit" + to_string(instanceCounter), 
+        BlockType::Exit_Block, defaultPortWdith, blockDelay) {
+    ++instanceCounter;
+    Block::addInputPort(Port("controlIn"));
+}
 
 Exit::~Exit() {}
+
+void Exit::resetCounter() {
+    instanceCounter = 1;
+}
