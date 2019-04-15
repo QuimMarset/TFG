@@ -44,9 +44,11 @@ int main () {
     clust3.addBlock(&op3);
     clust3.addBlock(&const4);
 
-    Exit ret;
+    Return ret;
+    Exit exit;
     Cluster clust4("While_end");
     clust4.addBlock(&ret);
+    clust4.addBlock(&exit);
 
     Channel channel1("fact", "mergeFact", "out", "in1");
     Channel channel2("i", "mergeI", "out", "in1");

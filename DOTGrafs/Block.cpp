@@ -643,12 +643,34 @@ Entry::Entry(int defaultPortWidth, int blockDelay) :
         Block("Entry" + to_string(instanceCounter), 
         BlockType::Entry_Block, defaultPortWidth, blockDelay) {
     ++instanceCounter;
-    Block::addOutputPort(Port("controlOut"));
+    Block::addOutputPort(Port("controlOut", Port::PortType::Base, 0));
 }
 
 Entry::~Entry() {}
 
 void Entry::resetCounter() {
+    instanceCounter = 1;
+}
+
+
+/*
+ * =================================
+ *  Class Argument
+ * =================================
+*/
+
+
+int Argument::instanceCounter = 1;
+
+Argument::Argument(int defaultPortWdith, int blockDelay) : Block("Arg" + to_string(instanceCounter), 
+        BlockType::Entry_Block, defaultPortWdith, blockDelay) {
+    ++instanceCounter;
+    Block::addOutputPort(Port("dataOut"));
+}
+
+Argument::~Argument() {}
+
+void Argument::resetCounter() {
     instanceCounter = 1;
 }
 
@@ -665,11 +687,33 @@ int Exit::instanceCounter = 1;
 Exit::Exit(int defaultPortWdith, int blockDelay) : Block("Exit" + to_string(instanceCounter), 
         BlockType::Exit_Block, defaultPortWdith, blockDelay) {
     ++instanceCounter;
-    Block::addInputPort(Port("controlIn"));
+    Block::addInputPort(Port("controlIn", Port::PortType::Base, 0));
 }
 
 Exit::~Exit() {}
 
 void Exit::resetCounter() {
+    instanceCounter = 1;
+}
+
+
+/*
+ * =================================
+ *  Class Return
+ * =================================
+*/
+
+
+int Return::instanceCounter = 1;
+
+Return::Return(int defaultPortWdith, int blockDelay) : Block("Ret" + to_string(instanceCounter), 
+        BlockType::Exit_Block, defaultPortWdith, blockDelay) {
+    ++instanceCounter;
+    Block::addInputPort(Port("dataIn"));
+}
+
+Return::~Return() {}
+
+void Return::resetCounter() {
     instanceCounter = 1;
 }

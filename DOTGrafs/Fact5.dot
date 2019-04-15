@@ -28,7 +28,8 @@ digraph "DataFlow Graph for 'Fact5' function" {
 		label = "While_body"
 	}
 	subgraph cluster_While_end { 
-		Exit1[type = Exit, in = "controlIn"];
+		Ret1[type = Exit, in = "dataIn"];
+		Exit1[type = Exit, in = "controlIn:0"];
 		label = "While_end"
 	}
 

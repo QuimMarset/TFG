@@ -362,12 +362,44 @@ private:
 };
 
 
+class Argument : public Block {
+
+public:
+
+    Argument(int defaultPortWidth = -1, int blockDelay = 0);
+    ~Argument();
+
+    static void resetCounter();
+
+private:
+
+    static int instanceCounter;
+
+};
+
+
 class Exit : public Block {
 
 public:
 
     Exit(int defaultPortWidth = -1, int blockDelay = 0);
     ~Exit();
+
+    static void resetCounter();
+
+private:
+
+    static int instanceCounter;
+
+};
+
+
+class Return : public Block {
+
+public:
+
+    Return(int defaultPortWidth = -1, int blockDelay = 0);
+    ~Return();
 
     static void resetCounter();
 
