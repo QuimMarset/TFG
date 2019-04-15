@@ -1,5 +1,5 @@
-#ifndef Blocks_H
-#define Blocks_H
+#ifndef BLOCKS_H
+#define BLOCKS_H
 
 #include <vector>
 #include <string>
@@ -410,4 +410,4 @@ private:
 };
 
 
-#endif // BlockS_H
+#endif // BLOCKS_H
