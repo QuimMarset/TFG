@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <assert.h>
 #include "Block.h"
 using namespace std;
 
@@ -19,8 +20,8 @@ public:
 
     void addBlock(Block* block);
 
-    void printBasicBlock(ostream &file) const;
-    friend ostream &operator << (ostream &file, const Cluster &cluster);
+    void printBasicBlock(ostream &file); 
+    // friend ostream &operator << (ostream &file, const Cluster &cluster);
 
 private:
 

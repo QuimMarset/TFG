@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <assert.h>
 #include "Cluster.h"
 #include "Channel.h"
 using namespace std;
@@ -19,7 +20,6 @@ public:
     string getFunctionName();
     void setFunctionName(const string &functionName);
 
-    //void addNode(Block* node);
     void addCluster(Cluster* cluster);
     void addEdge(Channel* edge);
 
@@ -29,7 +29,6 @@ private:
 
     string functionName;
     ofstream DOTFile;
-    //vector <Block*> nodes;
     vector <Cluster*> clusters;
     vector <Channel*> edges;
 

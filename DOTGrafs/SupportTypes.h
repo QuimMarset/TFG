@@ -70,8 +70,7 @@ public:
     void setType(PortType type);
     void setWidth(int width);
     void setDelay(int delay);
-
-    friend bool operator == (const Port &p1, const Port &p2);
+    
     friend ostream &operator << (ostream &out, const Port &p); 
 
 private:

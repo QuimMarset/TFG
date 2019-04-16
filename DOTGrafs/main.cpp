@@ -19,9 +19,9 @@ int main () {
     Fork fork2(2);
     Operator op1(OperatorType::LET);
     Fork fork3(3);
-    Branch branch1;
-    Branch branch2;
-    Branch branch3;
+    Branch branch1(32);
+    Branch branch2(32);
+    Branch branch3(32);
     Cluster clust2("While_cond");
     clust2.addBlock(&merge1);
     clust2.addBlock(&merge2);
@@ -39,10 +39,10 @@ int main () {
     Operator op2(OperatorType::Add);
     Operator op3(OperatorType::Mul);
     Cluster clust3("While_body");
+    clust3.addBlock(&const4);
     clust3.addBlock(&fork4);
     clust3.addBlock(&op2);
     clust3.addBlock(&op3);
-    clust3.addBlock(&const4);
 
     Return ret;
     Exit exit;

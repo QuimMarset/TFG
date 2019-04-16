@@ -5,29 +5,22 @@
 
 /*
  * =================================
- *  Class Block (base class)
+ *  Class Block
  * =================================
 */
 
-// Public function
+// Public functions
 
 Block::Block(const string &blockName, BlockType blockType, int defaultPortWidth,
         int blockDelay) {
-    assert(blockDelay >= 0);
-    assert(defaultPortWidth >= -1);
+    assert(defaultPortWidth >= -1 and blockDelay >= 0);
     this->blockName = blockName;
     this->blockType = blockType;
     this->defaultPortWidth = defaultPortWidth;
     this->blockDelay = blockDelay;
 }
 
-Block::~Block() {
-    blockName = "";
-    defaultPortWidth = 0;
-    blockDelay = 0;
-    inputPorts.clear();
-    outputPorts.clear();
-}
+Block::~Block() {}
 
 string Block::getBlockName() {
     return blockName;
@@ -56,7 +49,6 @@ void Block::setBlockType(BlockType blockType) {
 void Block::setDefaultPortWidth(int defaultPortWidth) {
     assert(defaultPortWidth >= 0);
     this->defaultPortWidth = defaultPortWidth;
-    setDataPortsWidth(defaultPortWidth);
 }
 
 void Block::setBlockDelay(int blockDelay) {
@@ -64,24 +56,17 @@ void Block::setBlockDelay(int blockDelay) {
     this->blockDelay = blockDelay;
 }
 
-int Block::getDataPortsWidth() {
-    return inputPorts[0].getWidth();
-}
-
-void Block::setDataPortsWidth(int width) {
-    for (Port& port : inputPorts) {
-        port.setWidth(width);
-    }
-    for (Port& port : outputPorts) {
-        port.setWidth(width);
-    }
-}
-
-void Block::printBlock(ostream &file) const {
+void Block::printBlock(ostream &file) {
+    unsigned int counterPortsNoWidth = getNumPortNoWidth();
+    assert(counterPortsNoWidth == inputPorts.size() + outputPorts.size() or 
+        counterPortsNoWidth == 0 or defaultPortWidth >= 0);
+        
     file << blockName << "[type = " << blockType;
+
     if (defaultPortWidth >= 0) {
         file << ", channel_width = " << defaultPortWidth;
     }
+
     for (unsigned int i = 0; i < inputPorts.size(); ++i) {
         if (i == 0) file << ", in = \"";
         else file << " ";
@@ -94,6 +79,7 @@ void Block::printBlock(ostream &file) const {
         file << outputPorts[i];
         if (i == outputPorts.size()-1) file << "\"";
     }
+
     bool first = true;
     bool printIn = false;
     bool printOut = false;
@@ -131,17 +117,25 @@ void Block::printBlock(ostream &file) const {
     }
 }
 
-void Block::closeBlock(ostream &file) const {
+void Block::closeBlock(ostream &file) {
     file << "];" << endl;
 }
 
-ostream &operator << (ostream& out, const Block &block) {
-    block.printBlock(out);
-    block.closeBlock(out);
-    return out;
-}
+// ostream &operator << (ostream& out, const Block &block) {
+//     block.printBlock(out);
+//     block.closeBlock(out);
+//     return out;
+// }
 
 // Protected functions
+
+string Block::getInPortName(int index) {
+    return inputPorts[index].getName();
+}
+
+string Block::getOutPortName(int index) {
+    return outputPorts[index].getName();
+}
 
 void Block::addInputPort(const Port &inPort) {
     inputPorts.push_back(inPort);
@@ -191,6 +185,19 @@ void Block::setOutPortDelay(int index, int delay) {
     outputPorts[index].setDelay(delay);
 }
 
+// Private Functons
+
+unsigned int Block::getNumPortNoWidth() {
+    unsigned int counter = 0;
+    for (unsigned int i = 0; i < inputPorts.size(); ++i) {
+        counter += (inputPorts[i].getWidth() == -1);
+    }
+    for (unsigned int i = 0; i < outputPorts.size(); ++i) {
+        counter += (outputPorts[i].getWidth() == -1);
+    }
+    return counter;
+}
+
 
 /*
  * =================================
@@ -198,20 +205,25 @@ void Block::setOutPortDelay(int index, int delay) {
  * =================================
 */
 
+
 vector<int> Operator::instanceCounter(numberOperators, 1);
 
 Operator::Operator(OperatorType opType, int defaultPortWidth, int blockDelay, 
         int latency, int II) : 
         Block(getOperatorName(opType) + to_string(instanceCounter[opType]), 
         BlockType::Operator_Block, defaultPortWidth, blockDelay) {
-    assert(latency >= 0);
-    assert(II >= 0);
+    assert(latency >= 0 and II >= 0);
     ++instanceCounter[opType];
     this->opType = opType;
     this->latency = latency;
     this->II = II;
-    Block::addInputPort(Port("in1"));
-    if (opType != OperatorType::Not) Block::addInputPort(Port("in2"));
+    if (opType == OperatorType::Not) {
+        Block::addInputPort(Port("in"));
+    }
+    else {
+        Block::addInputPort(Port("in1"));
+        Block::addInputPort(Port("in2"));
+    }
     Block::addOutputPort(Port("out"));
 }
 
@@ -243,8 +255,35 @@ void Operator::setOpType(OperatorType opType) {
     this->opType = opType;
 }
 
+string Operator::getInDataPortName(int index) {
+    assert(index >= 0 and index < Block::getNumInPorts());
+    return Block::getInPortName(index);
+}
+
+string Operator::getOutDataPortName() {
+    return Block::getOutPortName(0);
+}
+
+int Operator::getInDataPortWidth(int index) {
+    assert(index >= 0 and index < Block::getNumInPorts());
+    return Block::getInDataPortWidth(index);
+}
+
+int Operator::getOutDataPortWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+void Operator::setInDataPortWidth(int index, int width) {
+    assert(index >= 0 and index < Block::getNumInPorts());
+    Block::setInDataPortWidth(index, width);
+}
+
+void Operator::setOutDataPortWidth(int width) {
+    Block::setOutDataPortWidth(0, width);
+}
+
 int Operator::getInDataPortDelay(int index) {
-    assert(index >= 0 and index < 2);
+    assert(index >= 0 and index < Block::getNumInPorts());
     return Block::getInPortDelay(index);
 }
 
@@ -253,7 +292,7 @@ int Operator::getOutDataPortDelay() {
 }
 
 void Operator::setInDataPortDelay(int index, int delay) {
-    assert(index >= 0 and index < 2);
+    assert(index >= 0 and index < Block::getNumInPorts());
     Block::setInPortDelay(index, delay);
 }
 
@@ -261,7 +300,7 @@ void Operator::setOutDataPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
 }
 
-void Operator::printBlock(ostream &file) const {
+void Operator::printBlock(ostream &file) {
     Block::printBlock(file);
     file << ", op = " << opType;
     file << ", latency = " << latency;
@@ -284,7 +323,7 @@ void Operator::resetCounter() {
 
 int Buffer::instanceCounter = 1;
 
-Buffer::Buffer(int defaultPortWidth, int blockDelay, int slots, bool transparent) : 
+Buffer::Buffer(int slots, bool transparent, int defaultPortWidth, int blockDelay) : 
         Block("Buffer" + to_string(instanceCounter), BlockType::Buffer_Block, 
         defaultPortWidth, blockDelay) {
     assert(slots > 0);
@@ -314,6 +353,30 @@ void Buffer::setTransparent(bool transparent) {
     this->transparent = transparent;
 }
 
+string Buffer::getInDataPortName() {
+    return Block::getInPortName(0);
+}
+
+string Buffer::getOutDataPortName() {
+    return Block::getOutPortName(0);
+}
+
+int Buffer::getInDataPortWidth() {
+    return Block::getInDataPortWidth(0);
+}
+
+int Buffer::getOutDataPortWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+void Buffer::setInDataPortWidth(int width) {
+    Block::setInDataPortWidth(0, width);
+}
+
+void Buffer::setOutDataPortWidth(int width) {
+    Block::setOutDataPortWidth(0, width);
+}
+
 int Buffer::getInDataPortDelay() {
     return Block::getInPortDelay(0);
 }
@@ -330,7 +393,7 @@ void Buffer::setOutDataPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
 }
 
-void Buffer::printBlock(ostream &file) const {
+void Buffer::printBlock(ostream &file) {
     Block::printBlock(file);
     file << ", ";
     file << "slots = " << slots << ", ";
@@ -353,18 +416,44 @@ void Buffer::resetCounter() {
 
 int Fork::instanceCounter = 1;
 
-Fork::Fork(int defaultPortWidth, int blockDelay, int numOutPorts) : 
+Fork::Fork(int numOutPorts, int defaultPortWidth, int blockDelay) : 
         Block("Fork" + to_string(instanceCounter), BlockType::Fork_Block,
         defaultPortWidth, blockDelay) {
     assert(numOutPorts > 0);
     ++instanceCounter;
     Block::addInputPort(Port("in"));
-    for ( int i = 1;i <= numOutPorts; ++i) {
+    for (int i = 1; i <= numOutPorts; ++i) {
         Block::addOutputPort(Port("out" + to_string(i)));
     }
 }
 
 Fork::~Fork() {}
+
+string Fork::getInDataPortName() {
+    return Block::getInPortName(0);
+}
+string Fork::getOutDataPortName(int index) {
+    assert(index >= 0 and index < Block::getNumOutPorts());
+    return Block::getOutPortName(index);
+}
+
+int Fork::getInDataPortWidth() {
+    return Block::getInDataPortWidth(0);
+}
+
+int Fork::getOutDataPortWidth(int index) {
+    assert(index >= 0 and index < Block::getNumOutPorts());
+    return Block::getOutDataPortWidth(index);
+}
+
+void Fork::setInDataPortWidth(int width) {
+    Block::setInDataPortWidth(0, width);
+}
+
+void Fork::setOutDataPortWidth(int index, int width) {
+    assert(index >= 0 and index < Block::getNumOutPorts());
+    Block::setOutDataPortWidth(index, width);
+}
 
 int Fork::getInDataPortDelay() {
     return Block::getInPortDelay(0);
@@ -398,7 +487,7 @@ void Fork::resetCounter() {
 
 int Merge::instanceCounter = 1;
 
-Merge::Merge(int defaultPortWidth, int blockDelay, int numInPorts) : 
+Merge::Merge(int numInPorts, int defaultPortWidth, int blockDelay) : 
         Block("Merge" + to_string(instanceCounter), BlockType::Merge_Block,
         defaultPortWidth, blockDelay) {
     assert(numInPorts > 0);
@@ -410,6 +499,33 @@ Merge::Merge(int defaultPortWidth, int blockDelay, int numInPorts) :
 }
 
 Merge::~Merge() {}
+
+string Merge::getInDataPortName(int index) {
+    assert(index >= 0 and index < Block::getNumInPorts());
+    return Block::getInPortName(index);
+}
+
+string Merge::getOutDataPortName() {
+    return Block::getOutPortName(0);
+}
+
+int Merge::getInDataPortWidth(int index) {
+    assert(index >= 0 and index < Block::getNumInPorts());
+    return Block::getInDataPortWidth(index);
+}
+
+int Merge::getOutDataPortWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+void Merge::setInDataPortWidth(int index, int width) {
+    assert(index >= 0 and index < Block::getNumInPorts());
+    Block::setInDataPortWidth(index, width);
+}
+
+void Merge::setOutDataPortWidth(int width) {
+    Block::setOutDataPortWidth(0, width);
+}
 
 int Merge::getInDataPortDelay(int index) {
     assert(index >= 0 and index < Block::getNumInPorts());
@@ -449,23 +565,57 @@ Select::Select(int defaultPortWidth, int blockDelay) :
     ++instanceCounter;
     Block::addInputPort(Port("inTrue", Port::PortType::True));
     Block::addInputPort(Port("inFalse", Port::PortType::False));
-    Block::addInputPort(Port("inConditions", Port::PortType::Condition, 1));
+    Block::addInputPort(Port("condition", Port::PortType::Condition, 1));
     Block::addOutputPort(Port("out"));
 }
 
 Select::~Select() {}
 
-void Select::setDataPortsWidth(int width) {
+string Select::getTrueDataPortName() {
+    return Block::getInPortName(0);
+}
+
+string Select::getFalseDataPortName() {
+    return Block::getInPortName(1);
+}
+
+string Select::getConditionPortName() {
+    return Block::getInPortName(2);
+}
+
+string Select::getOutDataPortName() {
+    return Block::getOutPortName(0);
+}
+
+int Select::getTrueDataPortWidth() {
+    return Block::getInDataPortWidth(0);
+}
+
+int Select::getFalseDataPortWidth() {
+    return Block::getInDataPortWidth(1);
+}
+
+int Select::getOutDataPortWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+void Select::setTrueDataPortWidth(int width) { 
     Block::setInDataPortWidth(0, width);
+}
+
+void Select::setFalseDataPortWidth(int width) {
     Block::setInDataPortWidth(1, width);
+}
+
+void Select::setOutDataPortWidth(int width) { 
     Block::setOutDataPortWidth(0, width);
 }
 
-int Select::getDataTruePortDelay() {
+int Select::getTrueDataPortDelay() {
     return Block::getInPortDelay(0);
 }
 
-int Select::getDataFalsePortDelay() { 
+int Select::getFalseDataPortDelay() { 
     return Block::getInPortDelay(1);
 }
 
@@ -473,15 +623,15 @@ int Select::getConditionPortDelay() {
     return Block::getInPortDelay(2);
 }
 
-int Select::getDataOutPortDelay() {
+int Select::getOutDataPortDelay() {
     return Block::getOutPortDelay(0);
 }
 
-void Select::setDataTruePortDelay(int delay) {
+void Select::setTrueDataPortDelay(int delay) {
     Block::setInPortDelay(0, delay);
 }
 
-void Select::setDataFalsePortDelay(int delay) {
+void Select::setFalseDataPortDelay(int delay) {
     Block::setInPortDelay(1, delay);
 }
 
@@ -489,7 +639,7 @@ void Select::setConditionPortDelay(int delay) {
     Block::setInPortDelay(2, delay);
 }
 
-void Select::setDataOutPortDelay(int delay) {
+void Select::setOutDataPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
 }
 
@@ -512,20 +662,53 @@ Branch::Branch(int defaultPortWidth, int blockDelay) :
         defaultPortWidth, blockDelay) {
     ++instanceCounter;
     Block::addInputPort(Port("in"));
-    Block::addInputPort(Port("inCondition", Port::PortType::Condition, 1));
+    Block::addInputPort(Port("condition", Port::PortType::Condition, 1));
     Block::addOutputPort(Port("outTrue", Port::PortType::True));
     Block::addOutputPort(Port("outFalse", Port::PortType::False));
 }
 
 Branch::~Branch() {}
 
-void Branch::setDataPortsWidth(int width) {
+string Branch::getInDataPortName() {
+    return Block::getInPortName(0);
+}
+string Branch::getConditionPortName() {
+    return Block::getInPortName(1);
+}
+
+string Branch::getTrueDataPortName() {
+    return Block::getOutPortName(0);
+}
+
+string Branch::getFalseDataPortName() {
+    return Block::getOutPortName(1);
+}
+
+int Branch::getInDataPortWidth() {
+    return Block::getInDataPortWidth(0);
+}
+
+int Branch::getTrueDataPortWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+int Branch::getFalseDataPortWidth() {
+    return Block::getOutDataPortWidth(1);
+}
+
+void Branch::setInDataPortWidth(int width) {
     Block::setInDataPortWidth(0, width);
+}
+
+void Branch::setTrueDataPortWidth(int width) {
     Block::setOutDataPortWidth(0, width);
+}
+
+void Branch::setFalseDataPortWidth(int width) {
     Block::setOutDataPortWidth(1, width);
 }
 
-int Branch::getDataInPortDelay() {
+int Branch::getInDataPortDelay() {
     return Block::getInPortDelay(0);
 }
 
@@ -533,26 +716,26 @@ int Branch::getConditionPortDelay() {
     return Block::getInPortDelay(1);
 }
 
-int Branch::getDataTruePortDelay() {
+int Branch::getTrueDataPortDelay() {
     return Block::getOutPortDelay(0);
 }
 
-int Branch::getDataFalsePortDelay() {
+int Branch::getFalseDataPortDelay() {
     return Block::getOutPortDelay(1);
 }
 
-void Branch::setDataInPortDelay(int delay) {
+void Branch::setInDataPortDelay(int delay) {
     Block::setInPortDelay(0, delay);
 }
 
 void Branch::setConditionPortDelay(int delay) {
     Block::setInPortDelay(1, delay);
 }
-void Branch::setDataTruePortDelay(int delay) {
+void Branch::setTrueDataPortDelay(int delay) {
     Block::setOutPortDelay(0, delay);
 }
 
-void Branch::setDataFalsePortDelay(int delay) {
+void Branch::setFalseDataPortDelay(int delay) {
     Block::setOutPortDelay(1, delay);
 }
 
@@ -570,31 +753,49 @@ void Branch::resetCounter() {
 
 int Demux::instanceCounter = 1;
 
-Demux::Demux(int defaultPortWidth, int blockDelay, int numControlPorts) : 
+Demux::Demux(int numControlPorts, int defaultPortWidth, int blockDelay) : 
         Block("Demux" + to_string(instanceCounter), BlockType::Demux_Block, 
         defaultPortWidth, blockDelay) {
     ++instanceCounter;
     for (int i = 1; i <= numControlPorts; ++i) {
         Block::addInputPort(Port("control" + to_string(i)));
-        Block::addOutputPort(Port("data" + to_string(i)));
+        Block::addOutputPort(Port("in" + to_string(i)));
     }
-    Block::addInputPort(Port("data"));
+    Block::addInputPort(Port("out"));
 }
 
 Demux::~Demux() {}
 
-int Demux::getDataPortsWidth() {
-    unsigned int numIn = Block::getNumInPorts();
-    return Block::getInDataPortWidth(numIn-1);
+string Demux::getInDataPortName() {
+    return Block::getInPortName(Block::getNumInPorts()-1);
 }
 
-void Demux::setDataPortsWidth(int width) {
-    unsigned int numIn = Block::getNumInPorts();
-    unsigned int numOut = Block::getNumOutPorts();
-    Block::setInDataPortWidth(numIn-1, width);
-    for (unsigned int i = 0;i < numOut; ++i) {
-        Block::setOutDataPortWidth(i, width);
-    }
+string Demux::getControlPortName(int index) {
+    assert(index >= 0 and index < Block::getNumInPorts()-1);
+    return Block::getInPortName(index);
+}
+
+string Demux::getOutDataPortName(int index) {
+    assert(index >= 0 and index < Block::getNumOutPorts());
+    return Block::getOutPortName(index);
+}
+
+int Demux::getInDataPortWidth() {
+    return Block::getInDataPortWidth(Block::getNumInPorts()-1);
+}
+
+int Demux::getOutDataPortWidth(int index) {
+    assert(index >= 0 and index < Block::getNumOutPorts());
+    return Block::getOutDataPortWidth(index);
+}
+
+void Demux::setInDataPortWidth(int width) {
+    Block::setInDataPortWidth(Block::getNumInPorts()-1, width);
+}
+
+void Demux::setOutDataPortWidth(int index, int width) {
+    assert(index >= 0 and index < Block::getNumOutPorts());
+    Block::setOutDataPortWidth(index, width);
 }
 
 int Demux::getControlPortDelay(int index) {
@@ -602,11 +803,11 @@ int Demux::getControlPortDelay(int index) {
     return Block::getInPortDelay(index);
 }
 
-int Demux::getDataInPortDelay() {
+int Demux::getInDataPortDelay() {
     return Block::getInPortDelay(Block::getNumInPorts()-1);
 }
 
-int Demux::getDataOutPortDelay(int index) {
+int Demux::getOutDataPortDelay(int index) {
     assert(index >= 0 and index < Block::getNumOutPorts());
     return Block::getOutPortDelay(index);
 }
@@ -616,11 +817,11 @@ void Demux::setControlPortDelay(int index, int delay) {
     Block::setInPortDelay(index, delay);
 }
 
-void Demux::setDataInPortDelay(int delay) {
+void Demux::setInDataPortDelay(int delay) {
     Block::setInPortDelay(Block::getNumInPorts()-1, delay);
 }
 
-void Demux::setDataOutPortDelay(int index, int delay) {
+void Demux::setOutDataPortDelay(int index, int delay) {
     assert(index >= 0 and index < Block::getNumOutPorts());
     Block::setInPortDelay(index, delay);
 }
@@ -643,10 +844,22 @@ Entry::Entry(int defaultPortWidth, int blockDelay) :
         Block("Entry" + to_string(instanceCounter), 
         BlockType::Entry_Block, defaultPortWidth, blockDelay) {
     ++instanceCounter;
-    Block::addOutputPort(Port("controlOut", Port::PortType::Base, 0));
+    Block::addOutputPort(Port("control", Port::PortType::Base, 0));
 }
 
 Entry::~Entry() {}
+
+string Entry::getControlPortName() {
+    return Block::getOutPortName(0);
+}
+
+int Entry::getControlPortDelay() {
+    return Block::getOutPortDelay(0);
+}
+
+void Entry::setControlPortDelay(int delay) {
+    Block::setOutPortDelay(0, delay);
+}
 
 void Entry::resetCounter() {
     instanceCounter = 1;
@@ -662,13 +875,34 @@ void Entry::resetCounter() {
 
 int Argument::instanceCounter = 1;
 
-Argument::Argument(int defaultPortWdith, int blockDelay) : Block("Arg" + to_string(instanceCounter), 
+Argument::Argument(int defaultPortWdith, int blockDelay) : 
+        Block("Arg" + to_string(instanceCounter), 
         BlockType::Entry_Block, defaultPortWdith, blockDelay) {
     ++instanceCounter;
-    Block::addOutputPort(Port("dataOut"));
+    Block::addOutputPort(Port("out"));
 }
 
 Argument::~Argument() {}
+
+string Argument::getDataPortName() {
+    return Block::getOutPortName(0);
+}
+
+int Argument::getDataPortWidth() {
+    return Block::getOutDataPortWidth(0);
+}
+
+void Argument::setDataPortWidth(int width) {
+    Block::setOutDataPortWidth(0, width);
+}
+
+int Argument::getDataPortDelay() {
+    return Block::getOutPortDelay(0);
+}
+
+void Argument::setDataPortDelay(int delay) {
+    Block::setOutPortDelay(0, delay);
+}
 
 void Argument::resetCounter() {
     instanceCounter = 1;
@@ -687,10 +921,22 @@ int Exit::instanceCounter = 1;
 Exit::Exit(int defaultPortWdith, int blockDelay) : Block("Exit" + to_string(instanceCounter), 
         BlockType::Exit_Block, defaultPortWdith, blockDelay) {
     ++instanceCounter;
-    Block::addInputPort(Port("controlIn", Port::PortType::Base, 0));
+    Block::addInputPort(Port("control", Port::PortType::Base, 0));
 }
 
 Exit::~Exit() {}
+
+string Exit::getControlPortName() {
+    return Block::getInPortName(0);
+}
+
+int Exit::getControlPortDelay() {
+    return Block::getInPortDelay(0);
+}
+
+void Exit::setControlPortDelay(int delay) {
+    Block::setInPortDelay(0, delay);
+}
 
 void Exit::resetCounter() {
     instanceCounter = 1;
@@ -706,13 +952,34 @@ void Exit::resetCounter() {
 
 int Return::instanceCounter = 1;
 
-Return::Return(int defaultPortWdith, int blockDelay) : Block("Ret" + to_string(instanceCounter), 
+Return::Return(int defaultPortWdith, int blockDelay) : 
+        Block("Ret" + to_string(instanceCounter), 
         BlockType::Exit_Block, defaultPortWdith, blockDelay) {
     ++instanceCounter;
-    Block::addInputPort(Port("dataIn"));
+    Block::addInputPort(Port("in"));
 }
 
 Return::~Return() {}
+
+string Return::getDataPortName() {
+    return Block::getInPortName(0);
+}
+
+int Return::getDataPortWidth() {
+    return Block::getInDataPortWidth(0);
+}
+
+void Return::setDataPortWidth(int width) {
+    Block::setInDataPortWidth(0, width);
+}
+
+int Return::getDataPortDelay() {
+    return Block::getInPortDelay(0);
+}
+
+void Return::setDataPortDelay(int delay) {
+    Block::setInPortDelay(0, delay);
+}
 
 void Return::resetCounter() {
     instanceCounter = 1;

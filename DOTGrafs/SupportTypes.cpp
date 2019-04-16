@@ -57,67 +57,6 @@ ostream &operator << (ostream &out, BlockType blockType) {
 
 int numberOperators = 17;
 
-ostream &operator << (ostream& out, OperatorType op) {
-    switch (op)
-    {
-        case Add:
-            out << "add";
-            break;
-        case Sub:
-            out << "sub";
-            break;
-        case Mul:
-            out << "mul";
-            break;
-        case Div:
-            out << "div";
-            break;
-        case Rem:
-            out << "rem";
-            break;
-        case ShiftL:
-            out << "shiftl";
-            break;
-        case ShiftR:
-            out << "shiftr";
-            break;
-        case And:
-            out << "and";
-            break;
-        case Or:
-            out << "or";
-            break;
-        case Not:
-            out << "not";
-            break;
-        case Xor:
-            out << "xor";
-            break;
-        case Eq:
-            out << "eq";
-            break;
-        case NEq:
-            out << "neq";
-            break;
-        case GT:
-            out << "gt";
-            break;
-        case LT:
-            out << "lt";
-            break;
-        case GET:
-            out << "geq";
-            break;
-        case LET:
-            out << "leq";
-            break;
-        default:
-            break;
-    }
-    return out;
-}
-
-
 string getOperatorName(OperatorType op) {
     switch (op)
     {
@@ -137,10 +76,10 @@ string getOperatorName(OperatorType op) {
             return "Rem";
             break;
         case ShiftL:
-            return "ShiftL";
+            return "Shl";
             break;
         case ShiftR:
-            return "ShiftR";
+            return "Shr";
             break;
         case And:
             return "And";
@@ -158,25 +97,86 @@ string getOperatorName(OperatorType op) {
             return "Eq";
             break;
         case NEq:
-            return "NEq";
+            return "Ne";
             break;
         case GT:
-            return "GT";
+            return "Gt";
             break;
         case LT:
-            return "LT";
+            return "Lt";
             break;
         case GET:
-            return "GET";
+            return "Ge";
             break;
         case LET:
-            return "LET";
+            return "Le";
             break;
         default:
             break;
     }
     return "";
 }
+
+ostream &operator << (ostream& out, OperatorType op) {
+    switch (op)
+    {
+        case Add:
+            out << "add";
+            break;
+        case Sub:
+            out << "sub";
+            break;
+        case Mul:
+            out << "mul";
+            break;
+        case Div:
+            out << "div";
+            break;
+        case Rem:
+            out << "rem";
+            break;
+        case ShiftL:
+            out << "shl";
+            break;
+        case ShiftR:
+            out << "shr";
+            break;
+        case And:
+            out << "and";
+            break;
+        case Or:
+            out << "or";
+            break;
+        case Not:
+            out << "not";
+            break;
+        case Xor:
+            out << "xor";
+            break;
+        case Eq:
+            out << "eq";
+            break;
+        case NEq:
+            out << "ne";
+            break;
+        case GT:
+            out << "gt";
+            break;
+        case LT:
+            out << "lt";
+            break;
+        case GET:
+            out << "ge";
+            break;
+        case LET:
+            out << "le";
+            break;
+        default:
+            break;
+    }
+    return out;
+}
+
 
 
 /*
@@ -263,8 +263,4 @@ ostream &operator << (ostream &out, const Port &p) {
     }
     if (p.width > -1) out << ":" << p.width;
     return out;
-}
-
-bool operator == (const Port &p1, const Port &p2) {
-    return (p1.name == p2.name);
 }

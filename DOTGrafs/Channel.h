@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <assert.h>
 using namespace std;
 
 
@@ -12,7 +13,7 @@ public:
 
     Channel();
     Channel(const string &blockOut, const string &blockIn, 
-                const string &portOut, const string &portIn);
+        const string &portOut, const string &portIn);
     ~Channel();
 
     void setPortOut(const string &portOut);
@@ -25,9 +26,9 @@ public:
     string getBlockOut();
     string getBlockIn();
 
-    void printChannel(ostream &file) const;
+    void printChannel(ostream &file);
 
-    friend ostream &operator << (ostream &out, const Channel &channel);
+    // friend ostream &operator << (ostream &out, const Channel &channel);
 
 private:
 

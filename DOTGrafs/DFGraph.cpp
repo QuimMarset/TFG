@@ -12,10 +12,6 @@ DFGraph::DFGraph(const string& functionName) {
 }
 
 DFGraph::~DFGraph() {
-    functionName = "";
-    //nodes.clear();
-    clusters.clear();
-    edges.clear();
     DOTFile.close();
 }
 
@@ -27,10 +23,6 @@ void DFGraph::setFunctionName(const string &functionName) {
     this->functionName = functionName;
 }
 
-// void DFGraph::addNode(Block* node) {
-//     nodes.push_back(node);
-// }
-
 void DFGraph::addCluster(Cluster* cluster) {
     clusters.push_back(cluster);
 }
@@ -40,7 +32,7 @@ void DFGraph::addEdge(Channel* edge) {
 }
 
 void DFGraph::printGraph() {
-
+    assert(functionName.length() > 0);
     DOTFile << "digraph \"DataFlow Graph for '" + functionName + "' function\" {" << endl;
     DOTFile << "\tlabel=\"DataFlow Graph for '" + functionName + "' function\";" << endl;
     DOTFile << endl;

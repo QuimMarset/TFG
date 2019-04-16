@@ -2,34 +2,34 @@ digraph "DataFlow Graph for 'Fact5' function" {
 	label="DataFlow Graph for 'Fact5' function";
 
 	subgraph cluster_Entry { 
-		Constant1fact[type = Constant, in = "inControl", out = "out", value = 1];
-		Constant2i[type = Constant, in = "inControl", out = "out", value = 2];
-		Constant3n[type = Constant, in = "inControl", out = "out", value = 5];
+		Constant1fact[type = Constant, in = "control", out = "out", value = 1];
+		Constant2i[type = Constant, in = "control", out = "out", value = 2];
+		Constant3n[type = Constant, in = "control", out = "out", value = 5];
 		label = "Entry"
 	}
 	subgraph cluster_While_cond { 
-		Merge1[type = Merge, channel_width = 2, in = "in1 in2", out = "out"];
-		Merge2[type = Merge, channel_width = 2, in = "in1 in2", out = "out"];
-		Merge3[type = Merge, channel_width = 2, in = "in1 in2", out = "out"];
-		Fork1[type = Fork, channel_width = 2, in = "in", out = "out1 out2"];
-		Fork2[type = Fork, channel_width = 2, in = "in", out = "out1 out2"];
-		LET1[type = Operator, in = "in1 in2", out = "out", op = leq, latency = 0, II = 0];
-		Fork3[type = Fork, channel_width = 3, in = "in", out = "out1 out2"];
-		Branch1[type = Branch, in = "in inCondition?:1", out = "outTrue+ outFalse-"];
-		Branch2[type = Branch, in = "in inCondition?:1", out = "outTrue+ outFalse-"];
-		Branch3[type = Branch, in = "in inCondition?:1", out = "outTrue+ outFalse-"];
+		Merge1[type = Merge, in = "in1 in2", out = "out"];
+		Merge2[type = Merge, in = "in1 in2", out = "out"];
+		Merge3[type = Merge, in = "in1 in2", out = "out"];
+		Fork1[type = Fork, in = "in", out = "out1 out2"];
+		Fork2[type = Fork, in = "in", out = "out1 out2"];
+		Le1[type = Operator, in = "in1 in2", out = "out", op = le, latency = 0, II = 0];
+		Fork3[type = Fork, in = "in", out = "out1 out2 out3"];
+		Branch1[type = Branch, channel_width = 32, in = "in condition?:1", out = "outTrue+ outFalse-"];
+		Branch2[type = Branch, channel_width = 32, in = "in condition?:1", out = "outTrue+ outFalse-"];
+		Branch3[type = Branch, channel_width = 32, in = "in condition?:1", out = "outTrue+ outFalse-"];
 		label = "While_cond"
 	}
 	subgraph cluster_While_body { 
-		Fork4[type = Fork, channel_width = 2, in = "in", out = "out1 out2"];
+		Constant4constIncr[type = Constant, in = "control", out = "out", value = 1];
+		Fork4[type = Fork, in = "in", out = "out1 out2"];
 		Add1[type = Operator, in = "in1 in2", out = "out", op = add, latency = 0, II = 0];
 		Mul1[type = Operator, in = "in1 in2", out = "out", op = mul, latency = 0, II = 0];
-		Constant4constIncr[type = Constant, in = "inControl", out = "out", value = 1];
 		label = "While_body"
 	}
 	subgraph cluster_While_end { 
-		Ret1[type = Exit, in = "dataIn"];
-		Exit1[type = Exit, in = "controlIn:0"];
+		Ret1[type = Exit, in = "in"];
+		Exit1[type = Exit, in = "control:0"];
 		label = "While_end"
 	}
 

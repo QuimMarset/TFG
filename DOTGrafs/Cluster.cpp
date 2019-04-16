@@ -27,7 +27,8 @@ void Cluster::addBlock(Block* block) {
     blocks.push_back(block);
 }
 
-void Cluster::printBasicBlock(ostream &file) const {
+void Cluster::printBasicBlock(ostream &file) {
+    assert(basicBlockName.length() > 0);
     file << "\tsubgraph cluster_" << basicBlockName << " { " << endl;
     for (Block* block : blocks) {
         file << "\t\t";
@@ -38,7 +39,7 @@ void Cluster::printBasicBlock(ostream &file) const {
     file << "\t}" << endl;
 }
 
-ostream &operator << (ostream &out, const Cluster &cluster) {
-    cluster.printBasicBlock(out);
-    return out;
-}
+// ostream &operator << (ostream &out, const Cluster &cluster) {
+//     cluster.printBasicBlock(out);
+//     return out;
+// }
