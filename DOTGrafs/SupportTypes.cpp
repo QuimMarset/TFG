@@ -75,12 +75,6 @@ string getOperatorName(OperatorType op) {
         case Rem:
             return "Rem";
             break;
-        case ShiftL:
-            return "Shl";
-            break;
-        case ShiftR:
-            return "Shr";
-            break;
         case And:
             return "And";
             break;
@@ -93,10 +87,16 @@ string getOperatorName(OperatorType op) {
         case Xor:
             return "Xor";
             break;
+        case ShiftL:
+            return "Shl";
+            break;
+        case ShiftR:
+            return "Shr";
+            break;
         case Eq:
             return "Eq";
             break;
-        case NEq:
+        case NE:
             return "Ne";
             break;
         case GT:
@@ -105,16 +105,20 @@ string getOperatorName(OperatorType op) {
         case LT:
             return "Lt";
             break;
-        case GET:
+        case GE:
             return "Ge";
             break;
-        case LET:
+        case LE:
             return "Le";
             break;
         default:
             break;
     }
     return "";
+}
+
+bool isUnaryOperator(OperatorType op) {
+    return (op == OperatorType::Not);
 }
 
 ostream &operator << (ostream& out, OperatorType op) {
@@ -156,7 +160,7 @@ ostream &operator << (ostream& out, OperatorType op) {
         case Eq:
             out << "eq";
             break;
-        case NEq:
+        case NE:
             out << "ne";
             break;
         case GT:
@@ -165,10 +169,10 @@ ostream &operator << (ostream& out, OperatorType op) {
         case LT:
             out << "lt";
             break;
-        case GET:
+        case GE:
             out << "ge";
             break;
-        case LET:
+        case LE:
             out << "le";
             break;
         default:

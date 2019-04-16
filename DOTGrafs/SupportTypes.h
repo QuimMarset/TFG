@@ -27,21 +27,22 @@ enum OperatorType {
     Mul,
     Div,
     Rem,
-    ShiftL,
-    ShiftR,
-    And,
+    And, // Bitwise op
     Or,
     Not,
     Xor,
+    ShiftL,
+    ShiftR,
     Eq,
-    NEq,
+    NE,
     GT,
     LT,
-    GET,
-    LET
+    GE,
+    LE
 };
 
 string getOperatorName(OperatorType op);
+bool isUnaryOperator(OperatorType op);
 ostream &operator << (ostream& out, OperatorType op);
 extern int numberOperators;
 

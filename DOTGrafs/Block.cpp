@@ -217,7 +217,7 @@ Operator::Operator(OperatorType opType, int defaultPortWidth, int blockDelay,
     this->opType = opType;
     this->latency = latency;
     this->II = II;
-    if (opType == OperatorType::Not) {
+    if (isUnaryOperator(opType)) {
         Block::addInputPort(Port("in"));
     }
     else {
