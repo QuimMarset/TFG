@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/quim/TFG/LivenessPass/Liveness/Liveness.cpp" "/home/quim/TFG/LivenessPass/build/Liveness/CMakeFiles/LLVMLiveness.dir/Liveness.o"
+  "/home/quim/TFG/DOTGraphPass/DOTGraph/DOTGraph.cpp" "/home/quim/TFG/DOTGraphPass/build/DOTGraph/CMakeFiles/LLVMDOTGraph.dir/DOTGraph.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

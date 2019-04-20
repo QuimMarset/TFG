@@ -54,10 +54,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/quim/TFG/LivenessPass
+CMAKE_SOURCE_DIR = /home/quim/TFG/DOTGraphPass
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/quim/TFG/LivenessPass/build
+CMAKE_BINARY_DIR = /home/quim/TFG/DOTGraphPass/build
 
 #=============================================================================
 # Target rules for target CMakeFiles/intrinsics_gen.dir
@@ -66,14 +66,14 @@ CMAKE_BINARY_DIR = /home/quim/TFG/LivenessPass/build
 CMakeFiles/intrinsics_gen.dir/all:
 	$(MAKE) -f CMakeFiles/intrinsics_gen.dir/build.make CMakeFiles/intrinsics_gen.dir/depend
 	$(MAKE) -f CMakeFiles/intrinsics_gen.dir/build.make CMakeFiles/intrinsics_gen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/quim/TFG/LivenessPass/build/CMakeFiles --progress-num= "Built target intrinsics_gen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/quim/TFG/DOTGraphPass/build/CMakeFiles --progress-num= "Built target intrinsics_gen"
 .PHONY : CMakeFiles/intrinsics_gen.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/intrinsics_gen.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/LivenessPass/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/DOTGraphPass/build/CMakeFiles 0
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/intrinsics_gen.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/LivenessPass/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/DOTGraphPass/build/CMakeFiles 0
 .PHONY : CMakeFiles/intrinsics_gen.dir/rule
 
 # Convenience name for target.
@@ -92,57 +92,57 @@ clean: CMakeFiles/intrinsics_gen.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Directory level rules for directory Liveness
+# Directory level rules for directory DOTGraph
 
 # Convenience name for "all" pass in the directory.
-Liveness/all: Liveness/CMakeFiles/LLVMLiveness.dir/all
+DOTGraph/all: DOTGraph/CMakeFiles/LLVMDOTGraph.dir/all
 
-.PHONY : Liveness/all
+.PHONY : DOTGraph/all
 
 # Convenience name for "clean" pass in the directory.
-Liveness/clean: Liveness/CMakeFiles/LLVMLiveness.dir/clean
+DOTGraph/clean: DOTGraph/CMakeFiles/LLVMDOTGraph.dir/clean
 
-.PHONY : Liveness/clean
+.PHONY : DOTGraph/clean
 
 # Convenience name for "preinstall" pass in the directory.
-Liveness/preinstall:
+DOTGraph/preinstall:
 
-.PHONY : Liveness/preinstall
+.PHONY : DOTGraph/preinstall
 
 #=============================================================================
-# Target rules for target Liveness/CMakeFiles/LLVMLiveness.dir
+# Target rules for target DOTGraph/CMakeFiles/LLVMDOTGraph.dir
 
 # All Build rule for target.
-Liveness/CMakeFiles/LLVMLiveness.dir/all:
-	$(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/depend
-	$(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/quim/TFG/LivenessPass/build/CMakeFiles --progress-num=1,2 "Built target LLVMLiveness"
-.PHONY : Liveness/CMakeFiles/LLVMLiveness.dir/all
+DOTGraph/CMakeFiles/LLVMDOTGraph.dir/all:
+	$(MAKE) -f DOTGraph/CMakeFiles/LLVMDOTGraph.dir/build.make DOTGraph/CMakeFiles/LLVMDOTGraph.dir/depend
+	$(MAKE) -f DOTGraph/CMakeFiles/LLVMDOTGraph.dir/build.make DOTGraph/CMakeFiles/LLVMDOTGraph.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/quim/TFG/DOTGraphPass/build/CMakeFiles --progress-num=1,2 "Built target LLVMDOTGraph"
+.PHONY : DOTGraph/CMakeFiles/LLVMDOTGraph.dir/all
 
 # Include target in all.
-all: Liveness/CMakeFiles/LLVMLiveness.dir/all
+all: DOTGraph/CMakeFiles/LLVMDOTGraph.dir/all
 
 .PHONY : all
 
 # Build rule for subdir invocation for target.
-Liveness/CMakeFiles/LLVMLiveness.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/LivenessPass/build/CMakeFiles 2
-	$(MAKE) -f CMakeFiles/Makefile2 Liveness/CMakeFiles/LLVMLiveness.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/LivenessPass/build/CMakeFiles 0
-.PHONY : Liveness/CMakeFiles/LLVMLiveness.dir/rule
+DOTGraph/CMakeFiles/LLVMDOTGraph.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/DOTGraphPass/build/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 DOTGraph/CMakeFiles/LLVMDOTGraph.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/DOTGraphPass/build/CMakeFiles 0
+.PHONY : DOTGraph/CMakeFiles/LLVMDOTGraph.dir/rule
 
 # Convenience name for target.
-LLVMLiveness: Liveness/CMakeFiles/LLVMLiveness.dir/rule
+LLVMDOTGraph: DOTGraph/CMakeFiles/LLVMDOTGraph.dir/rule
 
-.PHONY : LLVMLiveness
-
-# clean rule for target.
-Liveness/CMakeFiles/LLVMLiveness.dir/clean:
-	$(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/clean
-.PHONY : Liveness/CMakeFiles/LLVMLiveness.dir/clean
+.PHONY : LLVMDOTGraph
 
 # clean rule for target.
-clean: Liveness/CMakeFiles/LLVMLiveness.dir/clean
+DOTGraph/CMakeFiles/LLVMDOTGraph.dir/clean:
+	$(MAKE) -f DOTGraph/CMakeFiles/LLVMDOTGraph.dir/build.make DOTGraph/CMakeFiles/LLVMDOTGraph.dir/clean
+.PHONY : DOTGraph/CMakeFiles/LLVMDOTGraph.dir/clean
+
+# clean rule for target.
+clean: DOTGraph/CMakeFiles/LLVMDOTGraph.dir/clean
 
 .PHONY : clean
 

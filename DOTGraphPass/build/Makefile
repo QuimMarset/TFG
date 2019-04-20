@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/quim/TFG/LivenessPass
+CMAKE_SOURCE_DIR = /home/quim/TFG/DOTGraphPass
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/quim/TFG/LivenessPass/build
+CMAKE_BINARY_DIR = /home/quim/TFG/DOTGraphPass/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,14 +80,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/quim/TFG/LivenessPass/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/LivenessPass/build/CMakeFiles /home/quim/TFG/LivenessPass/build/Liveness/CMakeFiles/progress.marks
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f CMakeFiles/Makefile2 Liveness/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/LivenessPass/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/DOTGraphPass/build/CMakeFiles /home/quim/TFG/DOTGraphPass/build/CMakeFiles/progress.marks
+	$(MAKE) -f CMakeFiles/Makefile2 all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/quim/TFG/DOTGraphPass/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f CMakeFiles/Makefile2 Liveness/clean
+	$(MAKE) -f CMakeFiles/Makefile2 clean
 .PHONY : clean
 
 # The main clean target
@@ -97,48 +97,44 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f CMakeFiles/Makefile2 Liveness/preinstall
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f CMakeFiles/Makefile2 Liveness/preinstall
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/quim/TFG/LivenessPass/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-# Convenience name for target.
-Liveness/CMakeFiles/LLVMLiveness.dir/rule:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f CMakeFiles/Makefile2 Liveness/CMakeFiles/LLVMLiveness.dir/rule
-.PHONY : Liveness/CMakeFiles/LLVMLiveness.dir/rule
+#=============================================================================
+# Target rules for targets named intrinsics_gen
 
-# Convenience name for target.
-LLVMLiveness: Liveness/CMakeFiles/LLVMLiveness.dir/rule
-
-.PHONY : LLVMLiveness
+# Build rule for target.
+intrinsics_gen: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 intrinsics_gen
+.PHONY : intrinsics_gen
 
 # fast build rule for target.
-LLVMLiveness/fast:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/build
-.PHONY : LLVMLiveness/fast
+intrinsics_gen/fast:
+	$(MAKE) -f CMakeFiles/intrinsics_gen.dir/build.make CMakeFiles/intrinsics_gen.dir/build
+.PHONY : intrinsics_gen/fast
 
-# target to build an object file
-Liveness.o:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/Liveness.o
-.PHONY : Liveness.o
+#=============================================================================
+# Target rules for targets named LLVMDOTGraph
 
-# target to preprocess a source file
-Liveness.i:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/Liveness.i
-.PHONY : Liveness.i
+# Build rule for target.
+LLVMDOTGraph: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 LLVMDOTGraph
+.PHONY : LLVMDOTGraph
 
-# target to generate assembly for a file
-Liveness.s:
-	cd /home/quim/TFG/LivenessPass/build && $(MAKE) -f Liveness/CMakeFiles/LLVMLiveness.dir/build.make Liveness/CMakeFiles/LLVMLiveness.dir/Liveness.s
-.PHONY : Liveness.s
+# fast build rule for target.
+LLVMDOTGraph/fast:
+	$(MAKE) -f DOTGraph/CMakeFiles/LLVMDOTGraph.dir/build.make DOTGraph/CMakeFiles/LLVMDOTGraph.dir/build
+.PHONY : LLVMDOTGraph/fast
 
 # Help Target
 help:
@@ -147,11 +143,9 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... LLVMLiveness"
+	@echo "... intrinsics_gen"
 	@echo "... edit_cache"
-	@echo "... Liveness.o"
-	@echo "... Liveness.i"
-	@echo "... Liveness.s"
+	@echo "... LLVMDOTGraph"
 .PHONY : help
 
 
@@ -163,6 +157,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/quim/TFG/LivenessPass/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

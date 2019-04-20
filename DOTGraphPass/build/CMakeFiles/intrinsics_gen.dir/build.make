@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/quim/TFG/LivenessPass
+CMAKE_SOURCE_DIR = /home/quim/TFG/DOTGraphPass
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/quim/TFG/LivenessPass/build
+CMAKE_BINARY_DIR = /home/quim/TFG/DOTGraphPass/build
 
 # Utility rule file for intrinsics_gen.
 
@@ -67,6 +67,6 @@ CMakeFiles/intrinsics_gen.dir/clean:
 .PHONY : CMakeFiles/intrinsics_gen.dir/clean
 
 CMakeFiles/intrinsics_gen.dir/depend:
-	cd /home/quim/TFG/LivenessPass/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/quim/TFG/LivenessPass /home/quim/TFG/LivenessPass /home/quim/TFG/LivenessPass/build /home/quim/TFG/LivenessPass/build /home/quim/TFG/LivenessPass/build/CMakeFiles/intrinsics_gen.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/quim/TFG/DOTGraphPass/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/quim/TFG/DOTGraphPass /home/quim/TFG/DOTGraphPass /home/quim/TFG/DOTGraphPass/build /home/quim/TFG/DOTGraphPass/build /home/quim/TFG/DOTGraphPass/build/CMakeFiles/intrinsics_gen.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/intrinsics_gen.dir/depend
 

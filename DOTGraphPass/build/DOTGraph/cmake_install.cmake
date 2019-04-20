@@ -1,4 +1,4 @@
-# Install script for directory: /home/quim/TFG/LivenessPass/Liveness
+# Install script for directory: /home/quim/TFG/DOTGraphPass/DOTGraph
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
