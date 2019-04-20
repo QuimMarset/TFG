@@ -2,7 +2,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/raw_ofstream.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Instructions.h"
