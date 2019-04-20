@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -Wall -fno-rtti  -shared  -o libLLVMLiveness.so CMakeFiles/LLVMLiveness.dir/Liveness.o 

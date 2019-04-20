@@ -1,6 +1,0 @@
-/home/quim/TFG/DOTGraphPass/build/CMakeFiles/rebuild_cache.dir
-/home/quim/TFG/DOTGraphPass/build/CMakeFiles/intrinsics_gen.dir
-/home/quim/TFG/DOTGraphPass/build/CMakeFiles/edit_cache.dir
-/home/quim/TFG/DOTGraphPass/build/DOTGraph/CMakeFiles/rebuild_cache.dir
-/home/quim/TFG/DOTGraphPass/build/DOTGraph/CMakeFiles/LLVMDOTGraph.dir
-/home/quim/TFG/DOTGraphPass/build/DOTGraph/CMakeFiles/edit_cache.dir

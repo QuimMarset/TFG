@@ -1,6 +1,0 @@
-/home/quim/TFG/LivenessPass/build/CMakeFiles/rebuild_cache.dir
-/home/quim/TFG/LivenessPass/build/CMakeFiles/intrinsics_gen.dir
-/home/quim/TFG/LivenessPass/build/CMakeFiles/edit_cache.dir
-/home/quim/TFG/LivenessPass/build/Liveness/CMakeFiles/rebuild_cache.dir
-/home/quim/TFG/LivenessPass/build/Liveness/CMakeFiles/LLVMLiveness.dir
-/home/quim/TFG/LivenessPass/build/Liveness/CMakeFiles/edit_cache.dir
