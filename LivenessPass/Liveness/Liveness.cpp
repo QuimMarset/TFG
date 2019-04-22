@@ -1,155 +1,169 @@
 
-#include "llvm/ADT/Statistic.h"
-#include "llvm/IR/Function.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/CodeGen/MachineFunction.h"
-#include "llvm/IR/CFG.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/DebugInfoMetadata.h"
-#include "llvm/IR/DebugInfo.h"
-#include <map>
-#include <set>
-#include <vector>
-#include <algorithm>
-#include <fstream>
+#include "Liveness.h"
 
-using namespace std;
-using namespace llvm;
 
-namespace {
+char LiveVarsAnalysis::ID = 0;
 
-    typedef StringRef BlockName;
-    typedef set <Value*> UseSet;
-    typedef set <Value*> DefSet;
-    typedef set <Value*> LiveIn;
-    typedef set <Value*> LiveOut;
+// Public Functions
 
-    static string fileName;
-    
-    struct Liveness : public FunctionPass {
+LiveVarsAnalysis::LiveVarsAnalysis() : FunctionPass(ID) {}
 
-        static char ID;
-        Liveness() : FunctionPass(ID) {}
+LiveVarsAnalysis::~LiveVarsAnalysis() {}
 
-        void computeUsesDefs(BasicBlock &B, DefSet &defs, UseSet &uses) {
-        
-            for (BasicBlock::iterator it = B.begin(); it != B.end(); ++it) {
-                Value* lval = llvm::cast<Value>(it);            
-                if (!isa<PHINode>(*it)) {
-                    for (User::op_iterator op = it->op_begin(); op != it->op_end(); ++op) {
-                        Value *rval = *op;
-                        if((isa<Instruction>(rval) || isa<Argument>(rval)) 
-                                and defs.find(rval) == defs.end()) {
-                            uses.insert(rval);  
-                        }
-                    }
-                }  
-                if (uses.find(lval) == uses.end()) {
-                    defs.insert(lval);
-                } 
-            }
-        }
-
-        bool iterateBlock(BasicBlock &B, map <BlockName, LiveIn> &livesIn, map <BlockName, 
-                            LiveOut> &livesOut, const DefSet &defs, const UseSet &uses) {
-            
-            BlockName name = B.getName();
-            LiveIn newLivesIn, aux;
-            std::set_difference(livesOut[name].begin(), livesOut[name].end(),
-                                defs.begin(), defs.end(), 
-                                inserter(aux, aux.begin()));
-            std::set_union(aux.begin(), aux.end(),
-                            uses.begin(), uses.end(), 
-                            inserter(newLivesIn, newLivesIn.begin()));
-
-            bool changes = false;
-            for (LiveIn::iterator it = newLivesIn.begin(); it != newLivesIn.end(); it++) {
-                pair<LiveIn::iterator, bool> res = livesIn[name].insert(*it);
-                changes = changes | res.second;
-            }
-
-            if (&(*B.begin()) == B.getFirstNonPHI()) {
-                for (pred_iterator it = pred_begin(&B); it != pred_end(&B); ++it) {
-                    BlockName name_i = (*it)->getName();
-                    livesOut[name_i].insert(newLivesIn.begin(), newLivesIn.end());
-                }
-            }
-            else {
-                for (BasicBlock::iterator it = B.begin(); &(*it) != B.getFirstNonPHI(); ++it) {
-                    PHINode* phi = cast<PHINode> (it);
-                    for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
-                        Value* val_i = phi->getIncomingValue(i);
-                        BlockName name_i = phi->getIncomingBlock(i)->getName();
-                        if (isa<Instruction>(val_i) || isa<Argument>(val_i)) {
-                            livesOut[name_i].insert(val_i);
-                        }
-                        livesOut[name_i].insert(newLivesIn.begin(), newLivesIn.end());
-                    }
-                }
-            }
-            return changes;
-        }        
-
-        bool runOnFunction(Function &F) override {
-            
-            map <BlockName, UseSet> uses;
-            map <BlockName, DefSet> defs;
-            map <BlockName, LiveIn> livesIn;
-            map <BlockName, LiveOut> livesOut;
-
-            for (Function::iterator bb = F.begin(); bb != F.end(); ++bb) {
-                BlockName name = bb->getName();
-                uses.insert(make_pair(name, UseSet()));
-                defs.insert(make_pair(name, DefSet()));
-                computeUsesDefs(*bb, defs[name], uses[name]);
-                livesIn.insert(make_pair(name, LiveIn()));
-                livesOut.insert(make_pair(name, LiveOut()));
-            }
-
-            bool changes;
-            Function::BasicBlockListType &blocks = F.getBasicBlockList();
-            do
-            {
-                changes = false;
-                for (Function::BasicBlockListType::reverse_iterator bb = blocks.rbegin(); 
-                        bb != blocks.rend(); ++bb) {
-                    BlockName name = bb->getName();
-                    bool change = iterateBlock(*bb, livesIn, livesOut, defs[name], uses[name]);
-                    changes = changes | change; 
-                }
-            } while (changes);
-
-            if (fileName.empty()) {
-                fileName = F.getParent()->getModuleIdentifier();
-                fileName = fileName.substr(0, fileName.length()-3);
-            }
-            string resultFile = fileName + "_" + F.getName().str() + "_LVA.txt";
-            ofstream file;
-            file.open(resultFile);
-
-            for (Function::iterator bb = F.begin(); bb != F.end(); ++bb) {
-                StringRef name = bb ->getName();
-                file << "Block " << name.str() << '\n';
-                file << "Lives In" << '\n';
-                for (LiveIn::iterator it = livesIn[name].begin(); it != livesIn[name].end(); ++it) {
-                    file << (*it)->getName().str() << '\n';
-                }
-                file << "Lives Out" << '\n';
-                for (LiveOut::iterator it = livesOut[name].begin(); it != livesOut[name].end(); ++it) {
-                    file << (*it)->getName().str() << '\n';
-                }
-            }
-
-            file.close();
-
-            return false;
-        }
-
-    };
+string LiveVarsAnalysis::getInputFileName() {
+    return inputFileName;
 }
 
-char Liveness::ID = 0;
-static RegisterPass<Liveness> X("liveAnalysis", "Live Variable Analysis Pass",
-                            false /* Only looks at CFG */,
-                            false /* Analysis Pass */);
+LiveVarsAnalysis::FuncName LiveVarsAnalysis::getCurrentFuncName() {
+    return funcName;
+}
+
+int LiveVarsAnalysis::getIndexCurrentFunction() {
+    return index;
+}
+
+int LiveVarsAnalysis::getIndexFunc(FuncName name) {
+    if (indexation.find(name) != indexation.end()) {
+        return indexation[name];
+    }
+    return -1; // Function not found
+}
+
+bool LiveVarsAnalysis::runOnFunction(Function &F) {
+    if (inputFileName.empty()) {
+        setInputFileName(F.getParent()->getModuleIdentifier());
+    }
+    setCurrentFunc(F);
+
+    map <BBName, UseSet> uses;
+    map <BBName, DefSet> defs;
+    for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
+        BBName name = bb_it->getName();
+        uses.insert(make_pair(name, UseSet()));
+        defs.insert(make_pair(name, DefSet()));
+        computeUsesDefs(*bb_it, uses[name], defs[name]);
+    }
+
+    bool changes;
+    Function::BasicBlockListType &blocks = F.getBasicBlockList();
+    do {
+        changes = false;
+        for (Function::BasicBlockListType::const_reverse_iterator bb_it = blocks.rbegin(); 
+                bb_it != blocks.rend(); ++bb_it) {
+            BBName name = bb_it->getName();
+            bool change = iterateBasicBlock(*bb_it, uses[name], defs[name],  
+                liveInVars[index], liveOutVars[index]);
+            changes = changes | change; 
+        }
+    } 
+    while (changes);
+
+    printLiveVarsAnalysis();
+
+    return false;
+}
+
+// Private Functions
+
+void LiveVarsAnalysis::computeUsesDefs(const BasicBlock &BB, UseSet &uses, 
+        DefSet &defs) {
+    for (BasicBlock::const_iterator inst_it = BB.begin(); inst_it != BB.end(); ++inst_it) {    
+        if (!isa<PHINode>(*inst_it)) {
+            for (User::const_op_iterator op_it = inst_it->op_begin(); op_it != inst_it->op_end(); ++op_it) {
+                if((isa<Instruction>(op_it->get()) || isa<Argument>(op_it->get())) 
+                        and defs.find(op_it->get()->getName()) == defs.end()) {
+                    uses.insert(op_it->get()->getName());  
+                }
+            }
+        }  
+        if (!inst_it->getType()->isVoidTy() and uses.find(inst_it->getName()) == uses.end()) {
+            defs.insert(inst_it->getName());
+        }
+    }    
+}
+
+bool LiveVarsAnalysis::iterateBasicBlock(const BasicBlock &BB, const UseSet &uses, 
+        const DefSet &defs, FuncLiveInVars &livesIn, FuncLiveOutVars &livesOut) {
+    BBName name = BB.getName();
+    LiveInSet newLivesIn, aux;
+    set_difference(livesOut[name].begin(), livesOut[name].end(),
+                        defs.begin(), defs.end(), 
+                        inserter(aux, aux.begin()));
+    set_union(aux.begin(), aux.end(),
+                    uses.begin(), uses.end(), 
+                    inserter(newLivesIn, newLivesIn.begin()));
+
+    bool changes = false;
+    for (LiveInSet::const_iterator it = newLivesIn.begin(); it != newLivesIn.end(); it++) {
+        pair<LiveInSet::iterator, bool> res = livesIn[name].insert(*it);
+        changes = changes | res.second;
+    }
+
+    if (&(*BB.begin()) == BB.getFirstNonPHI()) {
+        for (const_pred_iterator it = pred_begin(&BB); it != pred_end(&BB); ++it) {
+            BBName name_i = (*it)->getName();
+            livesOut[name_i].insert(newLivesIn.begin(), newLivesIn.end());
+        }
+    }
+    else {
+        for (BasicBlock::const_iterator it = BB.begin(); &(*it) != BB.getFirstNonPHI(); ++it) {
+            const PHINode* phi = cast<PHINode> (it);
+            for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
+                Value* val_i = phi->getIncomingValue(i);
+                BBName name_i = phi->getIncomingBlock(i)->getName();
+                if (isa<Instruction>(val_i) || isa<Argument>(val_i)) {
+                    livesOut[name_i].insert(val_i->getName());
+                }
+                livesOut[name_i].insert(newLivesIn.begin(), newLivesIn.end());
+            }
+        }
+    }
+    return changes;
+}
+
+void LiveVarsAnalysis::printLiveVarsAnalysis() {
+    string resultFile = inputFileName + "_" + funcName.str() + "_LVA.txt";
+    ofstream file;
+    file.open(resultFile);
+    for (FuncLiveInVars::const_iterator it = liveInVars[index].begin(); 
+            it != liveInVars[index].end(); ++it) {
+        assert(liveOutVars[index].find(it->first) != liveOutVars[index].end());
+        file << "Block " << it->first.str() << '\n';
+        file << "Live In\n";
+        for (LiveInSet::const_iterator it2 = liveInVars[index][it->first].begin(); 
+                it2 != liveInVars[index][it->first].end(); ++it2) {
+            file << it2->str() << '\n';
+        }
+        file << "Live Out\n";
+        for (LiveOutSet::const_iterator it2 = liveOutVars[index][it->first].begin(); 
+                it2 != liveOutVars[index][it->first].end(); ++it2) {
+            file << it2->str() << '\n';
+        }
+    }
+    file.close();
+}
+
+void LiveVarsAnalysis::setInputFileName(StringRef name) {
+    // Assuming .ll extension
+    string aux = name.str();
+    assert(aux.substr(aux.length()-3, 3) == ".ll");
+    inputFileName = aux.substr(0, aux.length()-3);
+}
+
+void LiveVarsAnalysis::setCurrentFunc(const Function &F) {
+    funcName = F.getName();
+    index = liveInVars.size();
+    indexation.insert(make_pair(funcName, index));
+    liveInVars.push_back(FuncLiveInVars());
+    liveOutVars.push_back(FuncLiveOutVars());
+    for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
+        liveInVars[index].insert(make_pair(bb_it->getName(), LiveInSet()));
+        liveOutVars[index].insert(make_pair(bb_it->getName(), LiveOutSet()));
+    }
+}
+
+
+static RegisterPass<LiveVarsAnalysis> registerLiveVarsAnalysis("liveAnalysis", 
+    "Live Variable Analysis Pass",
+    false /* Only looks at CFG */,
+    false /* Analysis Pass */);
