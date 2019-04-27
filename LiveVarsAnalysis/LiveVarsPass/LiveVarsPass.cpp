@@ -1,35 +1,35 @@
 
-#include "Liveness.h"
+#include "LiveVarsPass.h"
 
 
-char LiveVarsAnalysis::ID = 0;
+char LiveVarsPass::ID = 0;
 
 // Public Functions
 
-LiveVarsAnalysis::LiveVarsAnalysis() : FunctionPass(ID) {}
+LiveVarsPass::LiveVarsPass() : FunctionPass(ID) {}
 
-LiveVarsAnalysis::~LiveVarsAnalysis() {}
+LiveVarsPass::~LiveVarsPass() {}
 
-string LiveVarsAnalysis::getInputFileName() {
+string LiveVarsPass::getInputFileName() {
     return inputFileName;
 }
 
-LiveVarsAnalysis::FuncName LiveVarsAnalysis::getCurrentFuncName() {
+LiveVarsPass::FuncName LiveVarsPass::getCurrentFuncName() {
     return funcName;
 }
 
-int LiveVarsAnalysis::getIndexCurrentFunction() {
+int LiveVarsPass::getIndexCurrentFunction() {
     return index;
 }
 
-int LiveVarsAnalysis::getIndexFunc(FuncName name) {
+int LiveVarsPass::getIndexFunc(FuncName name) {
     if (indexation.find(name) != indexation.end()) {
         return indexation[name];
     }
     return -1; // Function not found
 }
 
-bool LiveVarsAnalysis::runOnFunction(Function &F) {
+bool LiveVarsPass::runOnFunction(Function &F) {
     if (inputFileName.empty()) {
         setInputFileName(F.getParent()->getModuleIdentifier());
     }
@@ -65,7 +65,7 @@ bool LiveVarsAnalysis::runOnFunction(Function &F) {
 
 // Private Functions
 
-void LiveVarsAnalysis::computeUsesDefs(const BasicBlock &BB, UseSet &uses, 
+void LiveVarsPass::computeUsesDefs(const BasicBlock &BB, UseSet &uses, 
         DefSet &defs) {
     for (BasicBlock::const_iterator inst_it = BB.begin(); inst_it != BB.end(); ++inst_it) {    
         if (!isa<PHINode>(*inst_it)) {
@@ -82,7 +82,7 @@ void LiveVarsAnalysis::computeUsesDefs(const BasicBlock &BB, UseSet &uses,
     }    
 }
 
-bool LiveVarsAnalysis::iterateBasicBlock(const BasicBlock &BB, const UseSet &uses, 
+bool LiveVarsPass::iterateBasicBlock(const BasicBlock &BB, const UseSet &uses, 
         const DefSet &defs, FuncLiveInVars &livesIn, FuncLiveOutVars &livesOut) {
     BBName name = BB.getName();
     LiveInSet newLivesIn, aux;
@@ -121,7 +121,7 @@ bool LiveVarsAnalysis::iterateBasicBlock(const BasicBlock &BB, const UseSet &use
     return changes;
 }
 
-void LiveVarsAnalysis::printLiveVarsAnalysis() {
+void LiveVarsPass::printLiveVarsAnalysis() {
     string resultFile = inputFileName + "_" + funcName.str() + "_LVA.txt";
     ofstream file;
     file.open(resultFile);
@@ -143,14 +143,14 @@ void LiveVarsAnalysis::printLiveVarsAnalysis() {
     file.close();
 }
 
-void LiveVarsAnalysis::setInputFileName(StringRef name) {
+void LiveVarsPass::setInputFileName(StringRef name) {
     // Assuming .ll extension
     string aux = name.str();
     assert(aux.substr(aux.length()-3, 3) == ".ll");
     inputFileName = aux.substr(0, aux.length()-3);
 }
 
-void LiveVarsAnalysis::setCurrentFunc(const Function &F) {
+void LiveVarsPass::setCurrentFunc(const Function &F) {
     funcName = F.getName();
     index = liveInVars.size();
     indexation.insert(make_pair(funcName, index));
@@ -163,7 +163,7 @@ void LiveVarsAnalysis::setCurrentFunc(const Function &F) {
 }
 
 
-static RegisterPass<LiveVarsAnalysis> registerLiveVarsAnalysis("liveAnalysis", 
+static RegisterPass<LiveVarsPass> registerLiveVarsPass("liveVarsPass", 
     "Live Variable Analysis Pass",
     false /* Only looks at CFG */,
     false /* Analysis Pass */);

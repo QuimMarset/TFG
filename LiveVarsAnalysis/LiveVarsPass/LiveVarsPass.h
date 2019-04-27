@@ -1,5 +1,5 @@
-#ifndef LIVEVARSANALYSIS_H
-#define LIVEVARSANALYSIS_H
+#ifndef LIVEVARSPASS_H
+#define LIVEVARSPASS_H
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
@@ -17,9 +17,8 @@
 using namespace std;
 using namespace llvm;
 
-namespace {
     
-class LiveVarsAnalysis : public FunctionPass {
+class LiveVarsPass : public FunctionPass {
 
 public:
 
@@ -38,8 +37,8 @@ public:
 
     static char ID;
 
-    LiveVarsAnalysis();
-    ~LiveVarsAnalysis();
+    LiveVarsPass();
+    ~LiveVarsPass();
 
     string getInputFileName();
     int getIndexCurrentFunction();
@@ -64,7 +63,6 @@ private:
 
 };
 
-}
 
 
-#endif // LIVEVARSANALYSIS_H
+#endif // LIVEVARSPASS_H

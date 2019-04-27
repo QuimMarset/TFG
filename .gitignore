@@ -4,3 +4,5 @@
 *.o
 # Ignore executable
 Test
+# Ignore build folder
+build/
