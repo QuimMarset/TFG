@@ -33,10 +33,13 @@ public:
     string getInPortName(int index);
     string getOutPortName(int index);  
 
+    int getNextInPort();
+    pair <Block*, int> getChannelEnd(int index = 0);
+    void setChannelEnd(Block* block, int portIdx, int index = 0);
+    bool channelEndAvailable();
+
     virtual void printBlock(ostream &file);
     void closeBlock(ostream &file);
-    // friend ostream &operator << (ostream& out, const Block &block);
-
 
 protected:
 
@@ -56,6 +59,8 @@ protected:
     int getNumInPorts();
     int getNumOutPorts();
 
+    void addChannelEnd(Block* block = nullptr, int portIdx = -1);
+
 private:
 
     string blockName;
@@ -64,6 +69,9 @@ private:
     int blockDelay;
     vector <Port> inputPorts;
     vector <Port> outputPorts;
+
+    int nextInPort;
+    vector <pair <Block*, int> > channelEnd;
 
     unsigned int getNumPortNoWidth();
     
@@ -266,6 +274,8 @@ public:
 
     Fork(int numOutPorts = 2, int defaultPortWidth = -1, int blockDelay = 0);
     ~Fork();
+
+    void addOutPort(int width = -1);
 
     string getInDataPortName();
     string getOutDataPortName(int index);

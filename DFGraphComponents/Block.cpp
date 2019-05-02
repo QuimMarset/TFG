@@ -22,6 +22,7 @@ Block::Block(const string &blockName, BlockType blockType, int defaultPortWidth,
     this->blockType = blockType;
     this->defaultPortWidth = defaultPortWidth;
     this->blockDelay = blockDelay;
+    nextInPort = 0;
 }
 
 Block::~Block() {}
@@ -125,12 +126,6 @@ void Block::closeBlock(ostream &file) {
     file << "];" << endl;
 }
 
-// ostream &operator << (ostream& out, const Block &block) {
-//     block.printBlock(out);
-//     block.closeBlock(out);
-//     return out;
-// }
-
 string Block::getInPortName(int index) {
     assert(index >= 0 and index <= inputPorts.size());
     return inputPorts[index].getName();
@@ -139,6 +134,34 @@ string Block::getInPortName(int index) {
 string Block::getOutPortName(int index) {
     assert(index >= 0 and index <= outputPorts.size());
     return outputPorts[index].getName();
+}
+
+int Block::getNextInPort() {
+    if (nextInPort == inputPorts.size()) {
+        return -1;
+    }
+    int currPort = nextInPort;
+    ++nextInPort;
+    return currPort;
+}
+
+pair <Block*, int> Block::getChannelEnd(int index) {
+    assert(index >= 0 and index < channelEnd.size());
+    return channelEnd[index];
+}
+
+void Block::setChannelEnd(Block* block, int portIdx, int index) {
+    assert(index >= 0 and index < channelEnd.size());
+    channelEnd[index] = make_pair(block, portIdx);
+}
+
+bool Block::channelEndAvailable() {
+    for (pair <Block*, int>& end : channelEnd) {
+        if (end.first == nullptr and end.second == -1) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Protected functions
@@ -191,6 +214,10 @@ void Block::setOutPortDelay(int index, int delay) {
     outputPorts[index].setDelay(delay);
 }
 
+void Block::addChannelEnd(Block* block, int portIdx) {
+    channelEnd.push_back(make_pair(block, portIdx));
+}
+
 // Private Functons
 
 unsigned int Block::getNumPortNoWidth() {
@@ -231,6 +258,7 @@ Operator::Operator(OperatorType opType, int defaultPortWidth, int blockDelay,
         Block::addInputPort(Port("in2"));
     }
     Block::addOutputPort(Port("out"));
+    Block::addChannelEnd();
 }
 
 Operator::~Operator() {}
@@ -338,6 +366,7 @@ Buffer::Buffer(int slots, bool transparent, int defaultPortWidth, int blockDelay
     this->transparent = transparent;
     Block::addInputPort(Port("in"));
     Block::addOutputPort(Port("out"));
+    Block::addChannelEnd();
 }
 
 Buffer::~Buffer() {}
@@ -430,10 +459,16 @@ Fork::Fork(int numOutPorts, int defaultPortWidth, int blockDelay) :
     Block::addInputPort(Port("in"));
     for (int i = 1; i <= numOutPorts; ++i) {
         Block::addOutputPort(Port("out" + to_string(i)));
+        Block::addChannelEnd();
     }
 }
 
 Fork::~Fork() {}
+
+void Fork::addOutPort(int width) {
+    Block::addOutputPort(Port("out" + to_string(Block::getNumOutPorts()),
+        Port::Base, width));
+}
 
 string Fork::getInDataPortName() {
     return Block::getInPortName(0);
@@ -502,6 +537,7 @@ Merge::Merge(int numInPorts, int defaultPortWidth, int blockDelay) :
     for ( int i = 1;i <= numInPorts; ++i) {
         Block::addInputPort(Port("in" + to_string(i)));
     }
+    Block::addChannelEnd();
 }
 
 Merge::~Merge() {}
@@ -573,6 +609,7 @@ Select::Select(int defaultPortWidth, int blockDelay) :
     Block::addInputPort(Port("inFalse", Port::PortType::False));
     Block::addInputPort(Port("condition", Port::PortType::Condition, 1));
     Block::addOutputPort(Port("out"));
+    Block::addChannelEnd();
 }
 
 Select::~Select() {}
@@ -671,6 +708,8 @@ Branch::Branch(int defaultPortWidth, int blockDelay) :
     Block::addInputPort(Port("condition", Port::PortType::Condition, 1));
     Block::addOutputPort(Port("outTrue", Port::PortType::True));
     Block::addOutputPort(Port("outFalse", Port::PortType::False));
+    Block::addChannelEnd();
+    Block::addChannelEnd();
 }
 
 Branch::~Branch() {}
@@ -765,9 +804,10 @@ Demux::Demux(int numControlPorts, int defaultPortWidth, int blockDelay) :
     ++instanceCounter;
     for (int i = 1; i <= numControlPorts; ++i) {
         Block::addInputPort(Port("control" + to_string(i)));
-        Block::addOutputPort(Port("in" + to_string(i)));
+        Block::addOutputPort(Port("out" + to_string(i)));
+        Block::addChannelEnd();
     }
-    Block::addInputPort(Port("out"));
+    Block::addInputPort(Port("in"));
 }
 
 Demux::~Demux() {}
@@ -851,6 +891,7 @@ Entry::Entry(int defaultPortWidth, int blockDelay) :
         BlockType::Entry_Block, defaultPortWidth, blockDelay) {
     ++instanceCounter;
     Block::addOutputPort(Port("control", Port::PortType::Base, 0));
+    Block::addChannelEnd();
 }
 
 Entry::~Entry() {}
@@ -886,6 +927,7 @@ Argument::Argument(int defaultPortWdith, int blockDelay) :
         BlockType::Entry_Block, defaultPortWdith, blockDelay) {
     ++instanceCounter;
     Block::addOutputPort(Port("out"));
+    Block::addChannelEnd();
 }
 
 Argument::~Argument() {}

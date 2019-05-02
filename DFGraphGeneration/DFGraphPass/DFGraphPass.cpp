@@ -152,24 +152,36 @@ void DFGraphPass::processInstruction(const Instruction &inst,
     Block* block_op;
     for (unsigned int i = 0; i < inst.getNumOperands(); ++i) {
         op_i = inst.getOperand(i);
+        Type* type_i = op_i->getType();
         if (isa<Instruction>(op_i) || isa<llvm::Argument>(op_i)) {
             block_op = bbVars[op_i->getName()];
-
-            if (!block_op->outPortAvailable()) {
+            if (!block_op->channelEndAvailable()) {
                 pair <Block*, int> prevEnd = block_op->getChannelEnd();
                 Fork* fork = new Fork();
                 fork->setChannelEnd(prevEnd.first, prevEnd.second);
-                block_op->setChannelEnd(fork, 0);
+                block_op->setChannelEnd(fork, fork->getNextInPort());
                 bbVars[op_i->getName()] = fork;
                 block_op = fork;
+                graph.addBlockToBB(fork);
             }
         }
         else if (isa<llvm::Constant>(op_i)) {
-            // DFGraphComp::Constant<int> constant();
-            // graph.addBlockToCluster(constant);
-            // block_op = &constant;
+            if (type_i->isIntegerTy()) {
+                block_op = new DFGraphComp::Constant<int>();
+            }
+            else if (type_i->isFloatTy()) {
+                block_op = new DFGraphComp::Constant<float>();
+            }
+            else if (type_i->isDoubleTy()) {
+                block_op = new DFGraphComp::Constant<double>();
+            }
+            else if (type_i->isHalfTy()) {
+                block_op = new DFGraphComp::Constant<short>();
+            }
+            // block_op = new DFGraphComp::Constant<>();
+            // graph.addBlockToBB(block_op);
         }
-        block->setChannelEnd(block_op, 0);
+        block_op->setChannelEnd(block, block->getNextInPort());
     }
     
     
