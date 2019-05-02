@@ -5,7 +5,12 @@
 #include <fstream>
 #include <assert.h>
 #include "Block.h"
+#include "Channel.h"
 using namespace std;
+
+namespace DFGraphComp
+{
+
 
 class Cluster {
 
@@ -18,7 +23,8 @@ public:
     string getBasicBlockName();
     void setBasicBlockName(const string &basicBlockName);
 
-    void addBlock(Block* block);
+    void addBlock(const Block& block);
+    void addChannel(const Channel& channel);
 
     void printBasicBlock(ostream &file); 
     // friend ostream &operator << (ostream &file, const Cluster &cluster);
@@ -26,8 +32,12 @@ public:
 private:
 
     string basicBlockName;
-    vector <Block*> blocks;
+    vector <Block> blocks;
+    vector <Channel> channels;
 
 };
+
+
+} // Close namespace
 
 #endif // CLUSTER_H

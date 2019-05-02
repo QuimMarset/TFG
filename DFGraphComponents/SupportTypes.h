@@ -5,6 +5,11 @@
 #include <fstream>
 using namespace std;
 
+
+namespace DFGraphComp
+{
+
+
 enum BlockType {
     Operator_Block = 0,
     Buffer_Block,
@@ -38,7 +43,9 @@ enum OperatorType {
     GT,
     LT,
     GE,
-    LE
+    LE,
+    True,
+    False
 };
 
 string getOperatorName(OperatorType op);
@@ -83,5 +90,7 @@ private:
 
 };
 
+
+} // Close namespace
 
 #endif // SUPPORTTYPES_H

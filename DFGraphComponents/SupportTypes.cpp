@@ -2,6 +2,10 @@
 #include "SupportTypes.h"
 
 
+namespace DFGraphComp
+{
+
+
 /*
  * =================================
  *  Enum BlockType
@@ -268,3 +272,6 @@ ostream &operator << (ostream &out, const Port &p) {
     if (p.width > -1) out << ":" << p.width;
     return out;
 }
+
+
+} // Close namespace

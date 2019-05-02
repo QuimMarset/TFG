@@ -7,6 +7,10 @@
 using namespace std;
 
 
+namespace DFGraphComp
+{
+
+
 class Channel {
 
 public:
@@ -38,5 +42,8 @@ private:
     string blockIn;
 
 };
+
+
+} // Close namespace
 
 #endif // CHANNEL_H

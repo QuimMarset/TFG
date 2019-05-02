@@ -7,10 +7,12 @@
 #include "llvm/IR/CFG.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "../../DFGraphComponents/Graph.h"
 #include "../../LiveVarsAnalysis/LiveVarsPass/LiveVarsPass.h"
 
 using namespace std;
 using namespace llvm;
+using namespace DFGraphComp;
 
 
 class DFGraphPass : public FunctionPass {
@@ -27,6 +29,10 @@ public:
 
 private:
 
+    void processLiveVars(const LiveVarsPass& liveness, const BasicBlock& bb);
+    void processInstruction(const Instruction &inst, map <StringRef, Block*>& bbVars, 
+        DFGraph& graph, const DataLayout &dl);
+    void printGraph();
 
 };
 

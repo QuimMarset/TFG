@@ -6,7 +6,12 @@
 #include <fstream>
 #include <assert.h>
 #include "SupportTypes.h"
+
 using namespace std;
+
+namespace DFGraphComp
+{
+
 
 class Block {
 
@@ -25,15 +30,15 @@ public:
     void setDefaultPortWidth(int defaultPortWidth);
     void setBlockDelay(int blockDelay);
 
+    string getInPortName(int index);
+    string getOutPortName(int index);  
+
     virtual void printBlock(ostream &file);
     void closeBlock(ostream &file);
     // friend ostream &operator << (ostream& out, const Block &block);
 
 
 protected:
-
-    string getInPortName(int index);
-    string getOutPortName(int index);
 
     int getInDataPortWidth(int index);
     int getOutDataPortWidth(int index);
@@ -141,6 +146,7 @@ private:
     static int instanceCounter;
     int slots;
     bool transparent;
+
 };
 
 
@@ -190,6 +196,7 @@ Constant<T>::Constant(const string &name, T constant, int defaultPortWidth,
     this->constant = constant;
     Block::addInputPort(Port("control"));
     Block::addOutputPort(Port("out"));
+    channelEnd.second = -1;
 }
 
 template <typename T>
@@ -429,7 +436,7 @@ public:
     void setControlPortDelay(int delay);
   
     static void resetCounter();
-
+    
 private:
 
     static int instanceCounter;
@@ -457,6 +464,8 @@ public:
 private:
 
     static int instanceCounter;
+
+    pair <Block*, int> channelEnd;
 
 };
 
@@ -504,6 +513,9 @@ private:
     static int instanceCounter;
 
 };
+
+
+} // Close namespace
 
 
 #endif // BLOCKS_H

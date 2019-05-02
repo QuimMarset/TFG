@@ -1,6 +1,10 @@
 
 #include "Channel.h"
 
+namespace DFGraphComp
+{
+
+
 
 Channel::Channel() {
     portOut = "";
@@ -63,3 +67,6 @@ void Channel::printChannel(ostream &file) {
 //     channel.printChannel(out);
 //     return out;
 // }
+
+
+} // Close namespace

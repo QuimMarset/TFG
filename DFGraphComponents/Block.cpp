@@ -3,6 +3,10 @@
 #include <iostream>
 
 
+namespace DFGraphComp
+{
+
+
 /*
  * =================================
  *  Class Block
@@ -127,15 +131,17 @@ void Block::closeBlock(ostream &file) {
 //     return out;
 // }
 
-// Protected functions
-
 string Block::getInPortName(int index) {
+    assert(index >= 0 and index <= inputPorts.size());
     return inputPorts[index].getName();
 }
 
 string Block::getOutPortName(int index) {
+    assert(index >= 0 and index <= outputPorts.size());
     return outputPorts[index].getName();
 }
+
+// Protected functions
 
 void Block::addInputPort(const Port &inPort) {
     inputPorts.push_back(inPort);
@@ -984,3 +990,6 @@ void Return::setDataPortDelay(int delay) {
 void Return::resetCounter() {
     instanceCounter = 1;
 }
+
+
+} // Close namespace
