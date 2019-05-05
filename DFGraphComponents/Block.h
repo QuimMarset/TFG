@@ -28,11 +28,9 @@ public:
     
     void setBlockDelay(int blockDelay);
 
-    virtual pair <Block*, int> getConnectedPort() = 0;
-    virtual void setConnectedPort(pair <Block*, int> connection) = 0;
+    virtual pair <Block*, const Port*> getConnectedPort() = 0;
+    virtual void setConnectedPort(pair <Block*, const Port*> connection) = 0;
     virtual bool connectionAvailable() = 0;
-
-    virtual string getInPortName(int index) = 0;
 
     virtual void printBlock(ostream &file) = 0;
 
@@ -62,8 +60,8 @@ public:
 
     virtual void setDataPortWidth(int width) = 0;
 
-    pair <Block*, int> getConnectedPort();
-    void setConnectedPort(pair <Block*, int> connection);
+    pair <Block*, const Port*> getConnectedPort();
+    void setConnectedPort(pair <Block*, const Port*> connection);
     bool connectionAvailable();
 
 protected:
@@ -71,7 +69,7 @@ protected:
     Port dataOut;
     int latency;
     int II;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 };
 
 class UnaryOperator : public Operator {
@@ -92,7 +90,7 @@ public:
 
     static void resetCounter();
 
-    string getInPortName(int index) override;
+    const Port* getDataInPort();
 
     void printBlock(ostream& file) override;
 
@@ -123,9 +121,10 @@ public:
 
     static void resetCounter();
 
-    void printBlock(ostream& file) override;
+    const Port* getDataIn1Port();
+    const Port* getDataIn2Port();
 
-    string getInPortName(int index) override;
+    void printBlock(ostream& file) override;
 
 private:
 
@@ -155,11 +154,11 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getDataInPort();
 
     void printBlock(ostream &file) override;
 
@@ -170,7 +169,7 @@ private:
     static int instanceCounter;
     int slots;
     bool transparent;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 
 };
 
@@ -192,11 +191,11 @@ public:
  
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getControlInPort();
 
     void printBlock(ostream &file) override;
 
@@ -206,7 +205,7 @@ private:
     Port data;
     static int instanceCounter;
     T constant;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 
 };
 
@@ -251,12 +250,12 @@ void Constant<T>::setControlPortDelay(int delay) {
 }
 
 template <typename T>
-pair <Block*, int> Constant<T>::getConnectedPort() {
+pair <Block*, const Port*> Constant<T>::getConnectedPort() {
     return connectedPort;
 }
 
 template <typename T>
-void Constant<T>::setConnectedPort(pair <Block*, int> connection) {
+void Constant<T>::setConnectedPort(pair <Block*, const Port*> connection) {
     connectedPort = connection;
 }
 
@@ -267,8 +266,8 @@ bool Constant<T>::connectionAvailable() {
 }
 
 template <typename T>
-string Constant<T>::getInPortName(int index) {
-    return control.getName();
+const Port* Constant<T>::getControlInPort() {
+    return &control;
 }
 
 template <typename T>
@@ -314,11 +313,11 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getDataInPort();
 
     void printBlock(ostream &file) override;
 
@@ -327,7 +326,7 @@ private:
     Port dataIn;
     vector <Port> dataOut;
     static int instanceCounter;
-    vector <pair <Block*, int> > connectedPorts;
+    vector <pair <Block*, const Port*> > connectedPorts;
     void addOutPort();
 
 };
@@ -349,11 +348,11 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getDataInPort(int index);
 
     void printBlock(ostream &file) override;
 
@@ -362,7 +361,7 @@ private:
     vector <Port> dataIn;
     Port dataOut;
     static int instanceCounter;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 };
 
 
@@ -385,11 +384,13 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getDataInTruePort();
+    const Port* getDataInFalsePort();
+    const Port* getConditionInPort();
 
     void printBlock(ostream &file) override;
 
@@ -400,7 +401,7 @@ private:
     Port condition;
     Port dataOut;
     static int instanceCounter;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 
 };
 
@@ -423,18 +424,19 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    pair <Block*, int> getConnectedPortTrue();
-    pair <Block*, int> getConnectedPortFalse();
-    void setConnectedPortTrue(pair <Block*, int> connection);
-    void setConnectedPortFalse(pair <Block*, int> connection);
+    pair <Block*, const Port*> getConnectedPortTrue();
+    pair <Block*, const Port*> getConnectedPortFalse();
+    void setConnectedPortTrue(pair <Block*, const Port*> connection);
+    void setConnectedPortFalse(pair <Block*, const Port*> connection);
     bool connectionTrueAvailable();
     bool connectionFalseAvailable();
 
-    string getInPortName(int index) override;
+    const Port* getDataInPort();
+    const Port* getConditionInPort();
 
     void printBlock(ostream &file) override;
 
@@ -445,8 +447,8 @@ private:
     Port dataTrue;
     Port dataFalse;
     static int instanceCounter;
-    pair <Block*, int> connectedPortTrue;
-    pair <Block*, int> connectedPortFalse;
+    pair <Block*, const Port*> connectedPortTrue;
+    pair <Block*, const Port*> connectedPortFalse;
     int nextOutPort;
 
 };
@@ -469,11 +471,12 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getControlInPort(int index);
+    const Port* getDataInPort();
 
     void printBlock(ostream &file) override;
 
@@ -483,7 +486,7 @@ private:
     Port dataIn;
     vector <Port> dataOut;
     static int instanceCounter;
-    vector <pair <Block*, int> > connectedPorts;
+    vector <pair <Block*, const Port*> > connectedPorts;
     int nextOutPort;
 
 };
@@ -500,11 +503,9 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
-
-    string getInPortName(int index) override;
 
     void printBlock(ostream &file) override;
   
@@ -512,7 +513,7 @@ private:
 
     Port control;
     static int instanceCounter;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 
 };
 
@@ -530,11 +531,9 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
-
-    string getInPortName(int index) override;
 
     void printBlock(ostream &file) override;
 
@@ -542,7 +541,7 @@ private:
 
     Port data;
     static int instanceCounter;
-    pair <Block*, int> connectedPort;
+    pair <Block*, const Port*> connectedPort;
 
 };
 
@@ -557,11 +556,11 @@ public:
 
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getControlInPort();
     
     void printBlock(ostream &file) override;
 
@@ -586,11 +585,11 @@ public:
     
     static void resetCounter();
 
-    pair <Block*, int> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, int> connection) override;
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    string getInPortName(int index) override;
+    const Port* getDataInPort();
 
     void printBlock(ostream &file) override;
 

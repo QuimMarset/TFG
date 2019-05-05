@@ -136,14 +136,13 @@ void processBinaryInst(const Instruction &inst,
         else if (pred == FCmpInst::FCMP_OLE || pred == FCmpInst::FCMP_ULE) {
             opType = BinaryOpType::LE;
         }
-        //TODO: True and False ?
     }
     DFGraphComp::BinaryOperator* op = new DFGraphComp::BinaryOperator(opType);
     op->setDataIn1PortWidth(op1TypeSize);
     op->setDataIn2PortWidth(op2TypeSize);
     op->setDataOutPortWidth(resultTypeSize);
-    processOperator(inst.getOperand(0), make_pair(op, 0), bbVars, graph);
-    processOperator(inst.getOperand(0), make_pair(op, 1), bbVars, graph);
+    processOperator(inst.getOperand(0), make_pair(op, op->getDataIn1Port()), bbVars, graph);
+    processOperator(inst.getOperand(0), make_pair(op, op->getDataIn2Port()), bbVars, graph);
     graph.addBlockToBB(op);   
 }
 
@@ -155,14 +154,14 @@ void processPhiInst(const Instruction &inst,
     int numInputs = phi->getNumIncomingValues();
     Merge* merge = new Merge(numInputs);
     for (unsigned int i = 0; i < numInputs; ++i) {
-        processOperator(phi->getIncomingValue(i), make_pair(merge, i), 
+        processOperator(phi->getIncomingValue(i), make_pair(merge, merge->getDataInPort(i)), 
             vars[phi->getIncomingBlock(i)->getName()], graph);
     }
     graph.addBlockToBB(merge);
 }
 
 
-void processOperator(Value* operand, pair <Block*, int> connection,
+void processOperator(Value* operand, pair <Block*, const Port*> connection,
     map <StringRef, Block*>& bbVars, DFGraph& graph) 
 {
     if (isa<llvm::Constant>(operand)) {
@@ -194,11 +193,11 @@ void processOperator(Value* operand, pair <Block*, int> connection,
             block->setConnectedPort(connection);
         }
         else {
-            pair <Block*, int> prevConnection = block->getConnectedPort();
+            pair <Block*, const Port*> prevConnection = block->getConnectedPort();
             Fork* fork = new Fork(2);
-            fork->setDataPortWidth(0); //TODO:
+            fork->setDataPortWidth(prevConnection.second->getWidth()); //TODO:
             fork->setConnectedPort(prevConnection);
-            block->setConnectedPort(make_pair(fork, 0));
+            block->setConnectedPort(make_pair(fork, fork->getDataInPort()));
         }
     }
 }
