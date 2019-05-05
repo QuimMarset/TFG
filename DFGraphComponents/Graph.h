@@ -50,7 +50,7 @@ public:
     void printGraph(ostream &file);
 
 private:
-
+    //TODO: default width
     string functionName;
     vector <BBGraph> basicBlocks;
     vector <Branch*> branches;

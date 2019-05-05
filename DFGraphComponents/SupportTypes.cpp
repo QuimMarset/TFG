@@ -59,9 +59,28 @@ ostream &operator << (ostream &out, BlockType blockType) {
  * =================================
 */
 
-int numberOperators = 17;
+int numberUnary = 3;
+int numberBinary = 16;
 
-string getOperatorName(OperatorType op) {
+string getUnaryOpName(UnaryOpType op) {
+    switch (op)
+    {
+    case Not:
+        return "Not";
+        break;
+    case True:
+        return "True";
+        break;
+    case False:
+        return "False";
+        break;
+    default:
+        break;
+    }
+    return "";
+}
+
+string getBinaryOpName(BinaryOpType op) {
     switch (op)
     {
         case Add:
@@ -84,9 +103,6 @@ string getOperatorName(OperatorType op) {
             break;
         case Or:
             return "Or";
-            break;
-        case Not:
-            return "Not";
             break;
         case Xor:
             return "Xor";
@@ -121,11 +137,25 @@ string getOperatorName(OperatorType op) {
     return "";
 }
 
-bool isUnaryOperator(OperatorType op) {
-    return (op == OperatorType::Not);
+ostream &operator << (ostream& out, UnaryOpType op) {
+    switch (op)
+    {
+    case Not:
+        out << "not";
+        break;
+    case True:
+        out << "true";
+        break;
+    case False:
+        out << "false";
+        break;
+    default:
+        break;
+    }
+    return out;
 }
 
-ostream &operator << (ostream& out, OperatorType op) {
+ostream &operator << (ostream& out, BinaryOpType op) {
     switch (op)
     {
         case Add:
@@ -155,9 +185,6 @@ ostream &operator << (ostream& out, OperatorType op) {
         case Or:
             out << "or";
             break;
-        case Not:
-            out << "not";
-            break;
         case Xor:
             out << "xor";
             break;
@@ -184,7 +211,6 @@ ostream &operator << (ostream& out, OperatorType op) {
     }
     return out;
 }
-
 
 
 /*

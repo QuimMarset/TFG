@@ -22,9 +22,25 @@ bool DFGraphPass::runOnFunction(Function &F) {
         varsMapping.insert(make_pair(name, map <StringRef, Block*>()));
         graph.addBasicBlock(BBGraph(name.str()));
         for (BasicBlock::const_iterator inst_it = bb_it->begin(); inst_it != bb_it->end(); 
-                ++inst_it) {
-            
-            processInstruction(*inst_it, varsMapping[name], graph, dl);
+            ++inst_it) 
+        {
+            if (isa <llvm::BinaryOperator>(inst_it) || isa<ICmpInst>(inst_it) ||
+                isa<FCmpInst>(inst_it)) 
+            {
+                processBinaryInst(*inst_it, varsMapping[name], graph, dl);
+            }
+            else if (isa<AllocaInst>(inst_it)) {
+
+            }
+            else if (isa<LoadInst>(inst_it)) {
+
+            }
+            else if (isa<StoreInst>(inst_it)) {
+                
+            }
+            else if (isa<PHINode>(inst_it)) {
+                processPhiInst(*inst_it, varsMapping, graph, dl);
+            }
         }
         //processLiveVars(liveness, *bb_it);
         //processControlBlocks();
@@ -35,158 +51,158 @@ bool DFGraphPass::runOnFunction(Function &F) {
 }
 
 
-void DFGraphPass::processInstruction(const Instruction &inst, 
-        map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
+void processBinaryInst(const Instruction &inst, 
+    map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
 {
+    unsigned int resultTypeSize = dl.getTypeSizeInBits(inst.getType());
+    unsigned int op1TypeSize = dl.getTypeSizeInBits(inst.getOperand(0)->getType());
+    unsigned int op2TypeSize = dl.getTypeSizeInBits(inst.getOperand(1)->getType());
+    BinaryOpType opType;
     unsigned int opCode = inst.getOpcode();
-    Block* block;
-    unsigned int instTypeSize = -1;
-    if (inst.getType()->isSized()) {
-        instTypeSize = dl.getTypeSizeInBits(inst.getType());
-    }
-
-    // Arithmetic Operations
-    
     if (opCode == Instruction::Add || opCode == Instruction::FAdd) {
-        block = new Operator(OperatorType::Add, instTypeSize);
+        opType = BinaryOpType::Add;
     }
     else if (opCode == Instruction::Sub || opCode == Instruction::FSub) {
-        block = new Operator(OperatorType::Sub, instTypeSize);
+        opType = BinaryOpType::Sub;
     }
     else if (opCode == Instruction::Mul || opCode == Instruction::FMul) {
-        block = new Operator(OperatorType::Mul, instTypeSize);
+        opType = BinaryOpType::Mul;
     }
     else if (opCode == Instruction::UDiv || opCode == Instruction::FDiv ||
-        opCode == Instruction::SDiv) {
-        block = new Operator(OperatorType::Div, instTypeSize);
+        opCode == Instruction::SDiv) 
+    {
+        opType = BinaryOpType::Div;
     }
     else if (opCode == Instruction::URem || opCode == Instruction::FRem ||
-        opCode == Instruction::SRem) {
-        block = new Operator(OperatorType::Rem, instTypeSize);
+        opCode == Instruction::SRem) 
+    {
+        opType = BinaryOpType::Rem;
     }
-
-    // Bitwise Operations
-
     else if (opCode == Instruction::And) {
-        block = new Operator(OperatorType::And, instTypeSize);
+        opType = BinaryOpType::And;
     }
     else if (opCode == Instruction::Or) {
-        block = new Operator(OperatorType::Or, instTypeSize);
+        opType = BinaryOpType::Or;
     }
     else if (opCode == Instruction::Xor) {
-        block = new Operator(OperatorType::Xor, instTypeSize);
+        opType = BinaryOpType::Xor;
     }
     else if (opCode == Instruction::Shl) {
-        block = new Operator(OperatorType::ShiftL, instTypeSize);
+        opType = BinaryOpType::ShiftL;
     }
     else if (opCode == Instruction::LShr or opCode == Instruction::AShr) {
-        block = new Operator(OperatorType::ShiftR, instTypeSize);
+        opType = BinaryOpType::ShiftR;
     }
-
-    // Logic Operations
-
     else if (opCode == Instruction::ICmp) {
         const ICmpInst* cmp = cast<ICmpInst> (&inst);
         ICmpInst::Predicate pred = cmp->getPredicate();
         if (pred == ICmpInst::ICMP_EQ) {
-            block = new Operator(OperatorType::Eq, instTypeSize);
+            opType = BinaryOpType::Eq;
         }
         else if (pred == ICmpInst::ICMP_NE) {
-            block = new Operator(OperatorType::NE, instTypeSize);
+            opType = BinaryOpType::NE;
         }
         else if (pred == ICmpInst::ICMP_SGT || pred == ICmpInst::ICMP_UGT) {
-            block = new Operator(OperatorType::GT, instTypeSize);
+            opType = BinaryOpType::GT;
         }
         else if (pred == ICmpInst::ICMP_SGE || pred == ICmpInst::ICMP_UGE) {
-            block = new Operator(OperatorType::GE, instTypeSize);
+            opType = BinaryOpType::GE;
         }
         else if (pred == ICmpInst::ICMP_SLT || pred == ICmpInst::ICMP_ULT) {
-            block = new Operator(OperatorType::LT, instTypeSize);
+            opType = BinaryOpType::LT;
         }
         else if (pred == ICmpInst::ICMP_SLE || pred == ICmpInst::ICMP_ULE) {
-            block = new Operator(OperatorType::LE, instTypeSize);
+            opType = BinaryOpType::LE;
         }
     }
-
     else if (opCode == Instruction::FCmp) {
         const FCmpInst* cmp = cast<FCmpInst> (&inst);
         FCmpInst::Predicate pred = cmp->getPredicate();
         if (pred == FCmpInst::FCMP_OEQ || pred == FCmpInst::FCMP_UEQ) {
-            block = new Operator(OperatorType::Eq, instTypeSize);
+            opType = BinaryOpType::Eq;
         }
         else if (pred == FCmpInst::FCMP_ONE || pred == FCmpInst::FCMP_UNE) {
-            block = new Operator(OperatorType::NE, instTypeSize);
+            opType = BinaryOpType::NE;
         }
         else if (pred == FCmpInst::FCMP_OGT || pred == FCmpInst::FCMP_UGT) {
-            block = new Operator(OperatorType::GT, instTypeSize);
+            opType = BinaryOpType::GT;
         }
         else if (pred == FCmpInst::FCMP_OGE || pred == FCmpInst::FCMP_UGE) {
-            block = new Operator(OperatorType::GE, instTypeSize);
+            opType = BinaryOpType::GE;
         }
         else if (pred == FCmpInst::FCMP_OLT || pred == FCmpInst::FCMP_ULT) {
-            block = new Operator(OperatorType::LT, instTypeSize);
+            opType = BinaryOpType::LT;
         }
         else if (pred == FCmpInst::FCMP_OLE || pred == FCmpInst::FCMP_ULE) {
-            block = new Operator(OperatorType::LE, instTypeSize);
+            opType = BinaryOpType::LE;
         }
-        else if (pred == FCmpInst::FCMP_TRUE) {
-            block = new Operator(OperatorType::True, instTypeSize);
-        }
-        else if (pred == FCmpInst::FCMP_FALSE) {
-            block = new Operator(OperatorType::False, instTypeSize);
-        }
+        //TODO: True and False ?
     }
-
-    // Phi
-
-    else if (opCode == Instruction::PHI) {
-        const PHINode* phi = cast<PHINode> (&inst);
-        block = new Merge(phi->getNumIncomingValues(), instTypeSize);
-    }
-
-
-
-
-    graph.addBlockToBB(block);
-    Value* op_i;
-    Block* block_op;
-    for (unsigned int i = 0; i < inst.getNumOperands(); ++i) {
-        op_i = inst.getOperand(i);
-        Type* type_i = op_i->getType();
-        if (isa<Instruction>(op_i) || isa<llvm::Argument>(op_i)) {
-            block_op = bbVars[op_i->getName()];
-            if (!block_op->channelEndAvailable()) {
-                pair <Block*, int> prevEnd = block_op->getChannelEnd();
-                Fork* fork = new Fork();
-                fork->setChannelEnd(prevEnd.first, prevEnd.second);
-                block_op->setChannelEnd(fork, fork->getNextInPort());
-                bbVars[op_i->getName()] = fork;
-                block_op = fork;
-                graph.addBlockToBB(fork);
-            }
-        }
-        else if (isa<llvm::Constant>(op_i)) {
-            if (type_i->isIntegerTy()) {
-                block_op = new DFGraphComp::Constant<int>();
-            }
-            else if (type_i->isFloatTy()) {
-                block_op = new DFGraphComp::Constant<float>();
-            }
-            else if (type_i->isDoubleTy()) {
-                block_op = new DFGraphComp::Constant<double>();
-            }
-            else if (type_i->isHalfTy()) {
-                block_op = new DFGraphComp::Constant<short>();
-            }
-            // block_op = new DFGraphComp::Constant<>();
-            // graph.addBlockToBB(block_op);
-        }
-        block_op->setChannelEnd(block, block->getNextInPort());
-    }
-    
-    
-    
+    DFGraphComp::BinaryOperator* op = new DFGraphComp::BinaryOperator(opType);
+    op->setDataIn1PortWidth(op1TypeSize);
+    op->setDataIn2PortWidth(op2TypeSize);
+    op->setDataOutPortWidth(resultTypeSize);
+    processOperator(inst.getOperand(0), make_pair(op, 0), bbVars, graph);
+    processOperator(inst.getOperand(0), make_pair(op, 1), bbVars, graph);
+    graph.addBlockToBB(op);   
 }
+
+void processPhiInst(const Instruction &inst,
+    map <StringRef, map <StringRef, Block*> >& vars, DFGraph& graph, 
+    const DataLayout &dl)
+{
+    const PHINode* phi = cast<PHINode>(&inst);
+    int numInputs = phi->getNumIncomingValues();
+    Merge* merge = new Merge(numInputs);
+    for (unsigned int i = 0; i < numInputs; ++i) {
+        processOperator(phi->getIncomingValue(i), make_pair(merge, i), 
+            vars[phi->getIncomingBlock(i)->getName()], graph);
+    }
+    graph.addBlockToBB(merge);
+}
+
+
+void processOperator(Value* operand, pair <Block*, int> connection,
+    map <StringRef, Block*>& bbVars, DFGraph& graph) 
+{
+    if (isa<llvm::Constant>(operand)) {
+        Type* type = operand->getType();
+        Block* constant;
+        if (type->isIntegerTy()) {
+            ConstantInt* cst = cast<ConstantInt>(operand);
+            if (cst->getBitWidth <= 32) {
+                constant = new DFGraphComp::Constant<int>((int)cst->getSExtValue());
+            }
+            else {
+                constant = new DFGraphComp::Constant<int64_t>(cst->getSExtValue());
+            }
+        }
+        else if (type->isFloatTy()) {
+            ConstantFP* cst = cast<ConstantFP>(operand);
+            constant = new DFGraphComp::Constant<float>(cst->getValueAPF().convertToFloat());
+        }
+        else if (type->isDoubleTy()) {
+            ConstantFP* cst = cast<ConstantFP>(operand);
+            constant = new DFGraphComp::Constant<double>(cst->getValueAPF().convertToFloat());
+        }
+        constant->setConnectedPort(connection);
+        graph.addBlockToBB(constant);
+    }
+    if (isa<Instruction>(operand) || isa<llvm::Argument>(operand)) {
+        Block* block = bbVars[operand->getName()];
+        if (block->connectionAvailable()) {
+            block->setConnectedPort(connection);
+        }
+        else {
+            pair <Block*, int> prevConnection = block->getConnectedPort();
+            Fork* fork = new Fork(2);
+            fork->setDataPortWidth(0); //TODO:
+            fork->setConnectedPort(prevConnection);
+            block->setConnectedPort(make_pair(fork, 0));
+        }
+    }
+}
+
 
 void processLiveVars(const LiveVarsPass& liveness, const BasicBlock& bb) {
 

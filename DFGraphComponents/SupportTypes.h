@@ -26,15 +26,20 @@ enum BlockType {
 ostream &operator << (ostream &out, BlockType blockType);
 
 
-enum OperatorType {
+enum UnaryOpType {
+    Not = 0,
+    True,
+    False
+};
+
+enum BinaryOpType {
     Add = 0,
     Sub,
     Mul,
     Div,
     Rem,
-    And, // Bitwise op
+    And,
     Or,
-    Not,
     Xor,
     ShiftL,
     ShiftR,
@@ -44,14 +49,17 @@ enum OperatorType {
     LT,
     GE,
     LE,
-    True,
-    False
 };
 
-string getOperatorName(OperatorType op);
-bool isUnaryOperator(OperatorType op);
-ostream &operator << (ostream& out, OperatorType op);
-extern int numberOperators;
+extern int numberUnary;
+extern int numberBinary;
+
+string getUnaryOpName(UnaryOpType op);
+string getBinaryOpName(BinaryOpType op);
+
+ostream &operator << (ostream& out, UnaryOpType op);
+ostream &operator << (ostream& out, BinaryOpType op);
+
 
 
 class Port {
