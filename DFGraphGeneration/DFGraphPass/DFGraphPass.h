@@ -6,6 +6,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/Pass.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/GetElementPtrTypeIterator.h"
 #include "llvm/Support/raw_ostream.h"
 #include "../../DFGraphComponents/Graph.h"
 #include "../../LiveVarsAnalysis/LiveVarsPass/LiveVarsPass.h"
@@ -29,9 +31,29 @@ public:
 
 private:
 
+    void processBinaryInst(const Instruction &inst, 
+        map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl);
+    
+    void processPhiInst(const Instruction &inst,
+        map <StringRef, map <StringRef, Block*> >& vars, DFGraph& graph, 
+        const DataLayout &dl);
+
+    void processAllocaInst(const Instruction &inst,
+        map <StringRef, Block*>& vars, DFGraph& graph, const DataLayout &dl);
+    
+    void processLoadInst(const Instruction &inst,
+        map <StringRef, Block*>& vars, DFGraph& graph, const DataLayout &dl);
+
+    void processStoreInst(const Instruction &inst,
+        map <StringRef, Block*>& vars, DFGraph& graph, const DataLayout &dl);
+    
+
+
+    void processOperator(const Value* operand, pair <Block*, const Port*> connection,
+        map <StringRef, Block*>& bbVars, DFGraph& graph);
+
     void processLiveVars(const LiveVarsPass& liveness, const BasicBlock& bb);
-    void processInstruction(const Instruction &inst, map <StringRef, Block*>& bbVars, 
-        DFGraph& graph, const DataLayout &dl);
+    void createBlockControl();
     void printGraph();
 
 };

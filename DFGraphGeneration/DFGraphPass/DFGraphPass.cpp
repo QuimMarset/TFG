@@ -30,16 +30,23 @@ bool DFGraphPass::runOnFunction(Function &F) {
                 processBinaryInst(*inst_it, varsMapping[name], graph, dl);
             }
             else if (isa<AllocaInst>(inst_it)) {
-
+                processAllocaInst(*inst_it, varsMapping[name], graph, dl);
             }
             else if (isa<LoadInst>(inst_it)) {
-
+                processLoadInst(*inst_it, varsMapping[name], graph, dl);
             }
             else if (isa<StoreInst>(inst_it)) {
-                
+                processStoreInst(*inst_it, varsMapping[name], graph, dl);
             }
             else if (isa<PHINode>(inst_it)) {
                 processPhiInst(*inst_it, varsMapping, graph, dl);
+            }
+            else if (isa<CastInst>(inst_it)) {
+                processCastInst(*inst_it, varsMapping[name], graph, dl);
+            }
+            
+            else if (isa<GetElementPtrInst>(inst_it)) {
+                processGetElementPtrInst(*inst_it, varsMapping[name], graph, dl);
             }
         }
         //processLiveVars(liveness, *bb_it);
@@ -160,15 +167,110 @@ void processPhiInst(const Instruction &inst,
     graph.addBlockToBB(merge);
 }
 
-
-void processOperator(Value* operand, pair <Block*, const Port*> connection,
-    map <StringRef, Block*>& bbVars, DFGraph& graph) 
+void processAllocaInst(const Instruction &inst, 
+    map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
 {
+    const AllocaInst* allocaInst = cast<AllocaInst>(&inst);
+    unsigned int allocSize = dl.getTypeSizeInBits(allocaInst->getAllocatedType());
+    DFGraphComp::Constant<int>* cstAlloc = new DFGraphComp::Constant<int>(allocSize);
+    if (allocaInst->isArrayAllocation()) {
+        const ConstantInt* cstElem = cast<ConstantInt>(allocaInst->getArraySize());
+        DFGraphComp::Constant<int>* nElems = new DFGraphComp::Constant<int>(cstElem->getZExtValue());
+        DFGraphComp::BinaryOperator* allocaBlock = new DFGraphComp::BinaryOperator(BinaryOpType::AllocaVector);
+        cstAlloc->setConnectedPort(make_pair(allocaBlock, allocaBlock->getDataIn1Port()));
+        nElems->setConnectedPort(make_pair(allocaBlock, allocaBlock->getDataIn2Port()));
+        graph.addBlockToBB(nElems);
+        graph.addBlockToBB(allocaBlock);
+        bbVars[inst.getName()] = allocaBlock;
+    }
+    else {
+        UnaryOperator* allocaBlock = new UnaryOperator(UnaryOpType::Alloca);
+        cstAlloc->setConnectedPort(make_pair(allocaBlock, allocaBlock->getDataInPort()));
+        graph.addBlockToBB(allocaBlock);
+        bbVars[inst.getName()] = allocaBlock;
+    }
+    graph.addBlockToBB(cstAlloc);
+}
+
+void processLoadInst(const Instruction &inst, 
+    map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
+{
+    const LoadInst* loadInst = cast<LoadInst>(&inst);
+    unsigned int pointerSize = dl.getTypeSizeInBits(loadInst->getPointerOperandType());
+    unsigned int valueTypeSize = dl.getTypeSizeInBits(loadInst->getType());
+    UnaryOperator* loadOp = new UnaryOperator(UnaryOpType::Load);
+    loadOp->setDataInPortWidth(pointerSize);
+    loadOp->setDataOutPortWidth(valueTypeSize);
+    processOperator(loadInst->getPointerOperand(), make_pair(loadOp, loadOp->getDataInPort()),
+        bbVars, graph);
+    bbVars[loadInst->getName()] = loadOp;
+    graph.addBlockToBB(loadOp);
+}
+
+void processStoreInst(const Instruction &inst, 
+    map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
+{
+    const StoreInst* storeInst = cast<StoreInst>(&inst);
+    unsigned int storeValueSize = dl.getTypeSizeInBits(storeInst->getValueOperand()->getType());
+    unsigned int pointerSize = dl.getTypeSizeInBits(storeInst->getPointerOperandType());
+    // create block
+    // set width
+    // processOperator();
+    // processOperator();
+    // graph.addBlockToBB()
+}
+
+void processCastInst(const Instruction &inst, 
+    map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
+{
+    const CastInst* castInst = cast<CastInst>(&inst);
+    unsigned int operandTypeSize = dl.getTypeSizeInBits(castInst->getSrcTy());
+    unsigned int castTypeSize = dl.getTypeSizeInBits(castInst->getDestTy());
+    Value* operand = castInst->getOperand(0);
+    BinaryOpType castOpType;
+    unsigned int opCode = castInst->getOpcode();
+    if (opCode == Instruction::Trunc) {
+        opCode = BinaryOpType::IntTrunc;
+    }
+    else if (opCode == Instruction::FPTrunc) {
+        opCode == BinaryOpType::FPointTrunc;
+    }
+    else if (opCode == Instruction::ZExt) {
+        opCode = BinaryOpType::IntZExt;
+    }
+    else if (opCode == Instruction::FPExt) {
+        opCode = BinaryOpType::IntSExt;
+    }
+    else if (opCode == Instruction::FPToUI) {
+        opCode = BinaryOpType::FPointToUInt;
+    }
+    else if (opCode == Instruction::FPToSI) {
+        opCode = BinaryOpType::FPointToSInt;
+    }
+    else if (opCode == Instruction::UIToFP) {
+        opCode = BinaryOpType::UIntToFPoint;
+    }
+    else if (opCode == Instruction::SIToFP) {
+        opCode = BinaryOpType::SIntToFPoint;
+    }
+    else if (opCode == Instruction::IntToPtr) {
+        opCode = BinaryOpType::IntToPtr;
+    }
+    else if (opCode == Instruction::PtrToInt) {
+        opCode = BinaryOpType::PtrToInt;
+    }
+    else if (opCode == Instruction::BitCast) {
+        opCode = BinaryOpType::TypeCast;
+    }
+    else if (opCode == Instruction::AddrSpaceCast) {
+        opCode = BinaryOpType::AddrSpaceCast;
+    }
+    DFGraphComp::BinaryOperator* castOp = new DFGraphComp::BinaryOperator(castOpType);
     if (isa<llvm::Constant>(operand)) {
         Type* type = operand->getType();
         Block* constant;
         if (type->isIntegerTy()) {
-            ConstantInt* cst = cast<ConstantInt>(operand);
+            const ConstantInt* cst = cast<ConstantInt>(operand);
             if (cst->getBitWidth <= 32) {
                 constant = new DFGraphComp::Constant<int>((int)cst->getSExtValue());
             }
@@ -177,17 +279,63 @@ void processOperator(Value* operand, pair <Block*, const Port*> connection,
             }
         }
         else if (type->isFloatTy()) {
-            ConstantFP* cst = cast<ConstantFP>(operand);
+            const ConstantFP* cst = cast<ConstantFP>(operand);
             constant = new DFGraphComp::Constant<float>(cst->getValueAPF().convertToFloat());
         }
         else if (type->isDoubleTy()) {
-            ConstantFP* cst = cast<ConstantFP>(operand);
+            const ConstantFP* cst = cast<ConstantFP>(operand);
+            constant = new DFGraphComp::Constant<double>(cst->getValueAPF().convertToFloat());
+        }
+        constant->setConnectedPort(make_pair(castOp, castOp->getDataIn1Port()));
+        graph.addBlockToBB(constant);
+    }
+    else if (isa<Instruction>(operand) || isa<llvm::Argument>(operand)) {
+        processOperator(operand, make_pair(castOp, castOp->getDataIn1Port()), bbVars, graph);
+    }
+    bbVars[inst.getName()] = castOp;
+    graph.addBlockToBB(castOp);
+}
+
+void processGetElementPtrInst(const Instruction &inst, 
+    map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl) 
+{
+    const GetElementPtrInst* gep = cast<GetElementPtrInst>(&inst);
+    llvm::gep_type_begin
+    for (unsigned int i = 1; i < gep->getNumOperands(); ++i) {
+
+    }
+}
+
+
+
+
+void processOperator(const Value* operand, pair <Block*, const Port*> connection,
+    map <StringRef, Block*>& bbVars, DFGraph& graph) 
+{
+    if (isa<llvm::Constant>(operand)) {
+        Type* type = operand->getType();
+        Block* constant;
+        if (type->isIntegerTy()) {
+            const ConstantInt* cst = cast<ConstantInt>(operand);
+            if (cst->getBitWidth <= 32) {
+                constant = new DFGraphComp::Constant<int>((int)cst->getSExtValue());
+            }
+            else {
+                constant = new DFGraphComp::Constant<int64_t>(cst->getSExtValue());
+            }
+        }
+        else if (type->isFloatTy()) {
+            const ConstantFP* cst = cast<ConstantFP>(operand);
+            constant = new DFGraphComp::Constant<float>(cst->getValueAPF().convertToFloat());
+        }
+        else if (type->isDoubleTy()) {
+            const ConstantFP* cst = cast<ConstantFP>(operand);
             constant = new DFGraphComp::Constant<double>(cst->getValueAPF().convertToFloat());
         }
         constant->setConnectedPort(connection);
         graph.addBlockToBB(constant);
     }
-    if (isa<Instruction>(operand) || isa<llvm::Argument>(operand)) {
+    else if (isa<Instruction>(operand) || isa<llvm::Argument>(operand)) {
         Block* block = bbVars[operand->getName()];
         if (block->connectionAvailable()) {
             block->setConnectedPort(connection);

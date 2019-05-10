@@ -59,7 +59,7 @@ ostream &operator << (ostream &out, BlockType blockType) {
  * =================================
 */
 
-int numberUnary = 3;
+int numberUnary = 4;
 int numberBinary = 16;
 
 string getUnaryOpName(UnaryOpType op) {
@@ -73,6 +73,12 @@ string getUnaryOpName(UnaryOpType op) {
         break;
     case False:
         return "False";
+        break;
+    case Load:
+        return "Load";
+        break;
+    case Alloca:
+        return "Alloca";
         break;
     default:
         break;
@@ -131,6 +137,45 @@ string getBinaryOpName(BinaryOpType op) {
         case LE:
             return "Le";
             break;
+        case AllocaVector: 
+            return "Alloca";
+            break;
+        case IntTrunc:
+            return "IntTrunc";
+            break;
+        case FPointTrunc:
+            return "FPointTrunc";
+            break;
+        case IntZExt:
+            return "IntZExt";
+            break;
+        case IntSExt:
+            return "IntSExt";
+            break;
+        case FPointToUInt:
+            return "FPointToUInt";
+            break;
+        case FPointToSInt:
+            return "FPointToSInt";
+            break;
+        case UIntToFPoint:
+            return "UIntToFPoint";
+            break;
+        case SIntToFPoint:
+            return "SIntToFPoint";
+            break;
+        case IntToPtr:
+            return "IntToPtr";
+            break;
+        case PtrToInt:
+            return "PtrToInt";
+            break;
+        case TypeCast:
+            return "TypeCast";
+            break;
+        case AddrSpaceCast:
+            return "AddrSpaceCast";
+            break;
         default:
             break;
     }
@@ -148,6 +193,12 @@ ostream &operator << (ostream& out, UnaryOpType op) {
         break;
     case False:
         out << "false";
+        break;
+    case Load:
+        out << "load";
+        break;
+    case Alloca:
+        out << "alloca";
         break;
     default:
         break;
@@ -205,6 +256,45 @@ ostream &operator << (ostream& out, BinaryOpType op) {
             break;
         case LE:
             out << "le";
+            break;
+        case AllocaVector:
+            out << "alloca";
+            break;
+        case IntTrunc:
+            out << "intTrunc";
+            break;
+        case FPointTrunc:
+            out << "fPointTrunc";
+            break;
+        case IntZExt:
+            out << "intZExt";
+            break;
+        case IntSExt:
+            out << "intSExt";
+            break;
+        case FPointToUInt:
+            out << "fPointToUInt";
+            break;
+        case FPointToSInt:
+            out << "fPointToSInt";
+            break;
+        case UIntToFPoint:
+            out << "uIntToFPoint";
+            break;
+        case SIntToFPoint:
+            out << "sIntToFPoint";
+            break;
+        case IntToPtr:
+            out << "intToPtr";
+            break;
+        case PtrToInt:
+            out << "ptrToInt";
+            break;
+        case TypeCast:
+            out << "typeCast";
+            break;
+        case AddrSpaceCast:
+            out << "addrSpaceCast";
             break;
         default:
             break;

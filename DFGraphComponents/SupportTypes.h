@@ -29,7 +29,9 @@ ostream &operator << (ostream &out, BlockType blockType);
 enum UnaryOpType {
     Not = 0,
     True,
-    False
+    False,
+    Load,
+    Alloca
 };
 
 enum BinaryOpType {
@@ -49,7 +51,22 @@ enum BinaryOpType {
     LT,
     GE,
     LE,
+    AllocaVector,
+    IntTrunc,
+    FPointTrunc,
+    IntZExt,
+    IntSExt,
+    FPointToUInt,
+    FPointToSInt,
+    UIntToFPoint,
+    SIntToFPoint,
+    IntToPtr,
+    PtrToInt,
+    TypeCast,
+    AddrSpaceCast
 };
+
+
 
 extern int numberUnary;
 extern int numberBinary;
