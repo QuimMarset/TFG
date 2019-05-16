@@ -24,13 +24,18 @@ void BBGraph::addBlock(Block* block) {
     blocks.push_back(block);
 }
 
+void BBGraph::freeBB() {
+    for (Block* block : blocks) {
+        delete block;
+    }
+}
+
 void BBGraph::printBB(ostream &file) {
     assert(bbName.length() > 0);
     file << "\tsubgraph cluster_" << bbName << " { " << endl;
     for (Block* block : blocks) {
         file << "\t\t";
         block->printBlock(file);
-        block->closeBlock(file);
     }
     file << "\t\tlabel = \"" << bbName << "\"" << endl;
     file << "\t}" << endl;
@@ -61,21 +66,34 @@ void DFGraph::addBlockToBB(Block* block) {
     currentBB.addBlock(block);
 }
 
-void DFGraph::addBranch(Branch* branch) {
-    branches.push_back(branch);
+string DFGraph::getFunctionName() {
+    return functionName;
 }
 
+int DFGraph::getDefaultPortWidth() {
+    return defaultPortWidth;
+}
+
+void DFGraph::setDefaultPortWidth(int width) {
+    defaultPortWidth = width;
+}
+
+void DFGraph::freeGraph() {
+    for (BBGraph& BB : basicBlocks) {
+        BB.freeBB();
+    }
+}
 
 void DFGraph::printGraph(ostream &file) {
     assert(functionName.length() > 0);
     file << "digraph \"DataFlow Graph for '" + functionName + "' function\" {" << endl;
     file << "\tlabel=\"DataFlow Graph for '" + functionName + "' function\";" << endl;
     file << endl;
+    if (defaultPortWidth >= 0) {
+        file << "\tchannel_width = " << defaultPortWidth << endl;
+    }
     for (BBGraph& bb : basicBlocks) {
         bb.printBB(file);
-    }
-    for (Branch* br : branches) {
-        br->printBlock(file);
     }
     file << endl;
     file << "}" << endl;

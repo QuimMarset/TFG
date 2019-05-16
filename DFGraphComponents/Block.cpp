@@ -15,6 +15,8 @@ namespace DFGraphComp
 
 // Public functions
 
+Block::Block() {}
+
 Block::Block(const string &blockName, BlockType blockType, int blockDelay) {
     assert(blockDelay >= 0);
     this->blockName = blockName;
@@ -349,6 +351,51 @@ void Buffer::printBlock(ostream &file) {
 
 /*
  * =================================
+ *  Class ConstantInterf
+ * =================================
+*/
+
+ConstantInterf::ConstantInterf() {}
+
+ConstantInterf::ConstantInterf(const string& blockName, int porWidth = -1, int blockDelay = 0) : 
+    Block(blockName, BlockType::Constant_Block, blockDelay), 
+    control("control", Port::Base, 0), data("out"),
+    connectedPort(nullptr, nullptr) {}
+
+ConstantInterf::~ConstantInterf() {}
+
+void ConstantInterf::setDataPortWidth(int width) {
+    data.setWidth(width);
+}
+
+void ConstantInterf::setControlPortDelay(int delay) {
+    control.setDelay(delay);
+}
+
+void ConstantInterf::setDataPortDelay(int delay){
+    data.setDelay(delay);
+}
+
+pair <Block*, const Port*> ConstantInterf::getConnectedPort() {
+    return connectedPort;
+}
+
+void ConstantInterf::setConnectedPort(pair <Block*, const Port*> connection) {
+    connectedPort = connection;
+}
+
+bool ConstantInterf::connectionAvailable() {
+    return (connectedPort.first == nullptr and 
+        connectedPort.second == nullptr);
+}
+
+const Port* ConstantInterf::getControlInPort() {
+    return &control;
+}
+
+
+/*
+ * =================================
  *  Class Fork
  * =================================
 */
@@ -356,16 +403,10 @@ void Buffer::printBlock(ostream &file) {
 
 int Fork::instanceCounter = 1;
 
-Fork::Fork(int numOutPorts, int blockDelay) : 
-    Block("Fork" + to_string(instanceCounter), BlockType::Fork_Block,
-    blockDelay), dataIn("in")
+Fork::Fork(int blockDelay) : Block("Fork" + to_string(instanceCounter), 
+    BlockType::Fork_Block, blockDelay), dataIn("in")
 {
-    assert(numOutPorts > 0);
     ++instanceCounter;
-    for (int i = 1; i <= numOutPorts; ++i) {
-        dataOut.push_back(Port("out" + to_string(i)));
-        connectedPorts.push_back(make_pair(nullptr, nullptr));
-    }
 }
 
 Fork::~Fork() {}
@@ -405,7 +446,22 @@ pair <Block*, const Port*> Fork::getConnectedPort() {
 }
 
 void Fork::setConnectedPort(pair <Block*, const Port*> connection) {
-    addOutPort();
+    int width = -1;
+    int delay = 0;
+    bool found = false;
+    for (unsigned int i = 0; i < dataOut.size() and !found; ++i) {
+        if (dataOut[i].getWidth() >= 0 and dataOut[i].getDelay() > 0) {
+            width = dataOut[i].getWidth();
+            delay = dataOut[i].getDelay();
+            found = true;
+        }
+    }
+    if (!found and dataIn.getWidth() >= 0 and dataIn.getDelay() > 0) {
+        width = dataIn.getWidth();
+        delay = dataIn.getDelay();
+    }
+    dataOut.push_back(Port("out" + to_string(dataOut.size()),
+        Port::Base, width, delay));
     connectedPorts.push_back(connection);
 }
 
@@ -457,24 +513,6 @@ void Fork::printBlock(ostream& file ) {
     file << "];" << endl;
 }
 
-void Fork::addOutPort() {
-    int width = -1;
-    int delay = 0;
-    bool found = false;
-    for (unsigned int i = 0; i < dataOut.size() and !found; ++i) {
-        if (dataOut[i].getWidth() >= 0 and dataOut[i].getDelay() > 0) {
-            width = dataOut[i].getWidth();
-            delay = dataOut[i].getDelay();
-            found = true;
-        }
-    }
-    if (!found and dataIn.getWidth() >= 0 and dataIn.getDelay() > 0) {
-        width = dataIn.getWidth();
-        delay = dataIn.getDelay();
-    }
-    dataOut.push_back(Port("out" + to_string(dataOut.size()),
-        Port::Base, width, delay));
-}
 
 
 /*
@@ -486,19 +524,24 @@ void Fork::addOutPort() {
 
 int Merge::instanceCounter = 1;
 
-Merge::Merge(int numInPorts, int blockDelay) : 
+Merge::Merge(int blockDelay) : 
     Block("Merge" + to_string(instanceCounter), BlockType::Merge_Block,
     blockDelay), dataOut("out"),
     connectedPort(nullptr, nullptr)
 {
-    assert(numInPorts > 0);
     ++instanceCounter;
-    for (unsigned int i = 1;i <= numInPorts; ++i) {
-        dataIn.push_back(Port("in" + to_string(i)));
-    }
 }
 
 Merge::~Merge() {}
+
+const Port* Merge::addDataInPort(int width = -1, int delay = 0) {
+    int portWidth;
+    if (width != -1) portWidth = width;
+    else portWidth = dataOut.getWidth();
+    dataIn.push_back(Port("in" + to_string(dataIn.size()), Port::Base, 
+        portWidth, delay));
+    return &dataIn[dataIn.size()-1];
+}
 
 void Merge::setDataInPortWidth(int index, int width) {
     assert(index >= 0 and index < dataIn.size());
@@ -1018,6 +1061,51 @@ void Demux::printBlock(ostream& file) {
 
 /*
  * =================================
+ *  Class EntryInterf
+ * =================================
+*/
+
+
+EntryInterf::EntryInterf() : Block() {}
+
+EntryInterf::EntryInterf(const string& blockName, int portWidth = -1, int blockDelay = 0) : 
+    Block(blockName, BlockType::Entry_Block, blockDelay), 
+    connectedPort(nullptr, nullptr) {}
+
+EntryInterf::~EntryInterf() {}
+
+void EntryInterf::setInPortDelay(int delay) {
+    outPort.setDelay(delay);
+}
+
+pair <Block*, const Port*> EntryInterf::getConnectedPort() {
+    return connectedPort;
+}
+
+void EntryInterf::setConnectedPort(pair <Block*, const Port*> connection) {
+    connectedPort = connection;
+}
+
+bool EntryInterf::connectionAvailable() {
+    return (connectedPort.first == nullptr and 
+        connectedPort.second == nullptr);
+}
+
+void EntryInterf::printBlock(ostream &file) {
+    file << blockName << "[type = Entry";
+    file << ", out = \"" << outPort << "\"";
+    if (outPort.getDelay() > 0) {
+        file << ", delay = \"";
+        if (blockDelay > 0) file << blockDelay << " ";
+        file << outPort.getName() << ":" << outPort.getDelay() << "\"";
+    }
+    else if (blockDelay > 0) file << ", delay " << blockDelay;
+    file << "];" << endl;
+}
+
+
+/*
+ * =================================
  *  Class Entry
  * =================================
 */
@@ -1025,46 +1113,16 @@ void Demux::printBlock(ostream& file) {
 
 int Entry::instanceCounter = 1;
 
-Entry::Entry(int blockDelay) : Block("Entry" + to_string(instanceCounter), 
-    BlockType::Entry_Block, blockDelay),
-    control("control", Port::Base, 0), connectedPort(nullptr, nullptr)
+Entry::Entry(int blockDelay) : EntryInterf("Entry" + to_string(instanceCounter), 0, blockDelay)
 {
     ++instanceCounter;
+    outPort.setName("control");
 }
 
 Entry::~Entry() {}
 
-void Entry::setControlPortDelay(int delay) {
-    control.setDelay(delay);
-}
-
 void Entry::resetCounter() {
     instanceCounter = 1;
-}
-
-pair <Block*, const Port*> Entry::getConnectedPort() {
-    return connectedPort;
-}
-
-void Entry::setConnectedPort(pair <Block*, const Port*> connection) {
-    connectedPort = connection;
-}
-
-bool Entry::connectionAvailable() {
-    return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
-}
-
-void Entry::printBlock(ostream& file) {
-    file << blockName << "[type = Entry";
-    file << ", out = \"" << control << "\"";
-    if (control.getDelay() > 0) {
-        file << ", delay = \"";
-        if (blockDelay > 0) file << blockDelay << " ";
-        file << control.getName() << ":" << control.getDelay() << "\"";
-    }
-    else if (blockDelay > 0) file << ", delay " << blockDelay;
-    file << "];" << endl;
 }
 
 
@@ -1077,48 +1135,77 @@ void Entry::printBlock(ostream& file) {
 
 int Argument::instanceCounter = 1;
 
-Argument::Argument(int blockDelay) : 
-    Block("Arg" + to_string(instanceCounter), 
-    BlockType::Entry_Block, blockDelay),
-    data("out"), connectedPort(nullptr, nullptr)
+Argument::Argument(int portWidth, int blockDelay) : 
+    EntryInterf("Argument" + to_string(instanceCounter), portWidth, blockDelay),
+    inControl("control", Port::Base, 0)
 {
     ++instanceCounter;
+    outPort.setName("data");
 }
 
 Argument::~Argument() {}
 
 void Argument::setDataPortWidth(int width) {
-    data.setWidth(width);
+    outPort.setWidth(width);
 }
 
-void Argument::setDataPortDelay(int delay) {
-    data.setDelay(delay);
+void Argument::setControlPortDelay(int delay) {
+    inControl.setDelay(delay);
+}
+
+const Port* Argument::getControlInPort() {
+    return &inControl;
 }
 
 void Argument::resetCounter() {
     instanceCounter = 1;
 }
 
-pair <Block*, const Port*> Argument::getConnectedPort() {
-    return connectedPort;
+
+/*
+ * =================================
+ *  Class ExitInterf
+ * =================================
+*/
+
+
+ExitInterf::ExitInterf() : Block() {}
+
+ExitInterf::ExitInterf(const string& blockName, int portWidth, int blockDelay) :
+    Block(blockName, BlockType::Exit_Block, blockDelay) {}
+
+ExitInterf::~ExitInterf() {}
+
+void ExitInterf::setInPortDelay(int delay) {
+    inPort.setDelay(delay);
 }
 
-void Argument::setConnectedPort(pair <Block*, const Port*> connection) {
-    connectedPort = connection;
+pair <Block*, const Port*> ExitInterf::getConnectedPort()  {
+    assert(0);
+    return make_pair(nullptr, nullptr);
 }
 
-bool Argument::connectionAvailable() {
-    return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
+void ExitInterf::setConnectedPort(pair <Block*, const Port*> connection) {
+    assert(0);
 }
 
-void Argument::printBlock(ostream& file) {
-    file << blockName << "[type = Entry";
-    file << ", out = \"" << data << "\"";
-    if (data.getDelay() > 0) {
+bool ExitInterf::connectionAvailable() {
+    assert(0);
+    return false;
+}
+
+const Port* ExitInterf::getInPort() {
+    return &inPort;
+}
+
+void ExitInterf::printBlock(ostream &file) {
+    file << blockName << "[type = Exit";
+    file << ", in = \"" << inPort << "\"";
+    if (inPort.getDelay() > 0) {
         file << ", delay = \"";
-        if (blockDelay > 0) file << blockDelay << " ";
-        file << data.getName() << ":" << data.getDelay() << "\"";
+        file << inPort.getName() << ":" << inPort.getDelay();
+        if (blockDelay > 0) file << " " << blockDelay;
+        file << "\"";
     }
     else if (blockDelay > 0) file << ", delay " << blockDelay;
     file << "];" << endl;
@@ -1134,54 +1221,18 @@ void Argument::printBlock(ostream& file) {
 
 int Exit::instanceCounter = 1;
 
-Exit::Exit(int blockDelay) : 
-    Block("Exit" + to_string(instanceCounter), 
-    BlockType::Exit_Block, blockDelay),
-    control("control", Port::Base, 0) 
+Exit::Exit(int blockDelay) : ExitInterf("Exit" + to_string(instanceCounter), 0, blockDelay)
 {
     ++instanceCounter;
+    inPort.setName("control");
 }
 
 Exit::~Exit() {}
-
-void Exit::setControlPortDelay(int delay) {
-    control.setDelay(delay);
-}
 
 void Exit::resetCounter() {
     instanceCounter = 1;
 }
 
-pair <Block*, const Port*> Exit::getConnectedPort() {
-    assert(0);
-    return make_pair(nullptr, nullptr);
-}
-
-void Exit::setConnectedPort(pair <Block*, const Port*> connection) {
-    assert(0);
-}
-
-bool Exit::connectionAvailable() {
-    assert(0);
-    return false;
-}
-
-const Port* Exit::getControlInPort() {
-    return &control;
-}
-
-void Exit::printBlock(ostream& file) {
-    file << blockName << "[type = Exit";
-    file << ", in = \"" << control << "\"";
-    if (control.getDelay() > 0) {
-        file << ", delay = \"";
-        file << control.getName() << ":" << control.getDelay();
-        if (blockDelay > 0) file << " " << blockDelay;
-        file << "\"";
-    }
-    else if (blockDelay > 0) file << ", delay " << blockDelay;
-    file << "];" << endl;
-}
 
 /*
  * =================================
@@ -1192,58 +1243,85 @@ void Exit::printBlock(ostream& file) {
 
 int Return::instanceCounter = 1;
 
-Return::Return(int blockDelay) : 
-    Block("Ret" + to_string(instanceCounter), 
-    BlockType::Exit_Block, blockDelay),
-    data("in")
+Return::Return(int portWidth, int blockDelay) : ExitInterf("Return" + to_string(instanceCounter), 
+    portWidth, blockDelay)
 {
     ++instanceCounter;
+    inPort.setName("data");
 }
 
 Return::~Return() {}
 
 void Return::setDataPortWidth(int width) {
-    data.setWidth(width);
-}
-
-void Return::setDataPortDelay(int delay) {
-    data.setDelay(delay);
+    inPort.setWidth(width);
 }
 
 void Return::resetCounter() {
     instanceCounter = 1;
 }
 
-pair <Block*, const Port*> Return::getConnectedPort() {
-    assert(0);
-    return make_pair(nullptr, nullptr);
+
+/*
+ * =================================
+ *  Class Store
+ * =================================
+*/
+
+Store::Store(int blockDelay = 0) : ExitInterf("Store" + to_string(instanceCounter)),
+    inPortAddr("pointer"), inPortAlign("align", Port::Base, 32)
+{
+    ++instanceCounter;
+    inPort.setName("value");
 }
 
-void Return::setConnectedPort(pair <Block*, const Port*> connection) {
-    assert(0);
+Store::~Store() {}
+
+void Store::setDataPortWidth(int width) {
+    inPort.setWidth(width);
 }
 
-bool Return::connectionAvailable() {
-    assert(0);
-    return false;
+void Store::setAddrPortWidth(int width) {
+    inPortAddr.setWidth(width);
 }
 
-const Port* Return::getDataInPort() {
-    return &data;
+const Port* Store::getAddrPort() {
+    return &inPortAddr;
 }
 
-void Return::printBlock(ostream& file) {
+const Port* Store::getAlignPort() {
+    return &inPortAlign;
+}
+
+void Store::resetCounter() {
+    instanceCounter = 1;
+}
+
+void Store::printBlock(ostream& file) {
     file << blockName << "[type = Exit";
-    file << ", in = \"" << data << "\"";
-    if (data.getDelay() > 0) {
+    file << ", in = \"" << inPort << " " << inPortAddr << " " << inPortAlign << "\"";
+    if (inPort.getDelay() > 0 || inPortAddr.getDelay() > 0 || inPortAlign.getDelay() > 0) {
         file << ", delay = \"";
-        file << data.getName() << ":" << data.getDelay();
-        if (blockDelay > 0) file << " " << blockDelay;
-        file << "\"";
+        bool first = true; 
+        if (inPort.getDelay() > 0) {
+            first = false;
+            file << inPort.getName() << ":" << inPort.getDelay();
+        }
+        if (inPortAddr.getDelay() > 0) {
+            if (!first) file << " ";
+            else first = false;
+            file << inPortAddr.getName() << ":" << inPortAddr.getDelay();
+        }
+        if (inPortAlign.getDelay() > 0) {
+            if (!first) file << " ";
+            else first = false;
+            file << inPortAlign.getName() << ":" << inPortAlign.getDelay();
+        }
+        if (blockDelay > 0) file << " " << blockDelay << "\"";
     }
     else if (blockDelay > 0) file << ", delay " << blockDelay;
     file << "];" << endl;
 }
+
 
 
 } // Close namespace

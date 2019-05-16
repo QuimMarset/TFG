@@ -19,7 +19,7 @@ struct GetElemPtrPass : public FunctionPass {
     GetElemPtrPass() : FunctionPass(ID) {}
 
     bool runOnFunction(Function &F) override {
-        DataLayout dl(F.getParent());
+        DataLayout DL(F.getParent());
         for (Function::iterator it = F.begin(); it != F.end(); ++it) {
             BasicBlock::iterator it2 = it->begin();
             while (it2 != it->end()) {
@@ -31,7 +31,7 @@ struct GetElemPtrPass : public FunctionPass {
                         resultPtr = builder.CreateBitCast(inst->getOperand(0), inst->getType());
                     }
                     else {
-                        Type* intType = dl.getIntPtrType(inst->getType());
+                        Type* intType = DL.getIntPtrType(inst->getType());
                         resultPtr = builder.CreatePtrToInt(inst->getOperand(0), intType);
                         Value* index;
                         for (gep_type_iterator gti = gep_type_begin(*inst); 
@@ -43,7 +43,7 @@ struct GetElemPtrPass : public FunctionPass {
                             }
                             if (gti.isSequential()) {
                                 APInt elemSize = APInt(intType->getIntegerBitWidth(), 
-                                    dl.getTypeAllocSize(gti.getIndexedType()));
+                                    DL.getTypeAllocSize(gti.getIndexedType()));
                                 if (elemSize != 1) {
                                     if (elemSize.isPowerOf2()) {
                                         index = builder.CreateShl(index, 
@@ -57,7 +57,7 @@ struct GetElemPtrPass : public FunctionPass {
                             }
                             else if (gti.isStruct()) {
                                 unsigned int idxValue = dyn_cast<ConstantInt>(index)->getZExtValue();
-                                const StructLayout* sl = dl.getStructLayout(gti.getStructType());
+                                const StructLayout* sl = DL.getStructLayout(gti.getStructType());
                                 index = ConstantInt::get(intType, sl->getElementOffset(idxValue));
                             }
                             resultPtr = builder.CreateAdd(resultPtr, index);

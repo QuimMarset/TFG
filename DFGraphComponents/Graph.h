@@ -23,6 +23,9 @@ public:
     ~BBGraph();
 
     void addBlock(Block *block);
+
+    void freeBB();
+
     void printBB(ostream &file);
 
 private:
@@ -47,13 +50,19 @@ public:
     void addBlockToBB(Block* block);
     void addBranch(Branch* branch);
 
+    string getFunctionName();
+
+    int getDefaultPortWidth();
+    void setDefaultPortWidth(int width);
+
+    void freeGraph();
+
     void printGraph(ostream &file);
 
 private:
-    //TODO: default width
+    int defaultPortWidth;
     string functionName;
     vector <BBGraph> basicBlocks;
-    vector <Branch*> branches;
 };
 
 

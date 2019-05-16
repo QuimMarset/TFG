@@ -17,6 +17,7 @@ class Block {
 
 public:
 
+    Block();
     Block(const string &blockName, BlockType type, int blockDelay);
     ~Block();
 
@@ -173,101 +174,79 @@ private:
 
 };
 
-
-template <typename T>
-class Constant : public Block {
+class ConstantInterf : public Block {
 
 public:
 
-    Constant(T value, int blockDelay = 0);
-    ~Constant();
-
-    void setConstant(T constant);
+    ~ConstantInterf();
 
     void setDataPortWidth(int width);
 
     void setControlPortDelay(int delay);
     void setDataPortDelay(int delay);
  
-    static void resetCounter();
-
     pair <Block*, const Port*> getConnectedPort() override;
     void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
     const Port* getControlInPort();
 
+protected:
+
+    ConstantInterf();
+    ConstantInterf(const string& blockName, int porWidth = -1, int blockDelay = 0);
+    Port control;
+    Port data;
+    pair <Block*, const Port*> connectedPort;
+
+};
+
+template <typename T>
+class Constant : public ConstantInterf {
+
+public:
+
+    Constant(T value, int portWidth = -1, int blockDelay = 0);
+    ~Constant();
+
+    void setValue(T value);
+
+    static void resetCounter();
+
     void printBlock(ostream &file) override;
 
 private:
 
-    Port control;
-    Port data;
     static int instanceCounter;
-    T constant;
-    pair <Block*, const Port*> connectedPort;
-
+    T value;
 };
 
 template <typename T>
 int Constant<T>::instanceCounter = 1;
 
 template <typename T>
-Constant<T>::Constant(T constant, int blockDelay)
-        : Block("Constant" + to_string(instanceCounter), 
-        BlockType::Constant_Block, defaultPortWidth, blockDelay), 
-        control("control", Port::Base, 0), data("out"),
-        connectedPort(nullptr, -1) 
+Constant<T>::Constant(T value, int portWidth, int blockDelay)
+        : ConstantInterf("Constant" + to_string(instanceCounter), 
+        portWidth, blockDelay), control("control", Port::Base, 0), 
+        data("out"), connectedPort(nullptr, nullptr) 
 {
     ++instanceCounter;
-    this->constant = constant;
+    this->value = value;
+    if (portWidth != -1) data.setWidth(portWidth);
+    else data.setWidth(sizeof(T)*8);
 }
 
 template <typename T>
 Constant<T>::~Constant() {}
 
 template <typename T>
-void Constant<T>::setConstant(T constant) {
-    this->constant = constant;
+void Constant<T>::setValue(T value) {
+    this->value = value;
 }
 
 template <typename T>
-void Constant<T>::setDataPortWidth(int width) {
-    assert(width >= 0);
-    data.setWidth(width);
-}
-
-template <typename T>
-void Constant<T>::setDataPortDelay(int delay) {
-    assert(delay >= 0);
-    data.setDelay(delay);
-}
-
-template <typename T>
-void Constant<T>::setControlPortDelay(int delay) {
-    assert(delay >= 0);
-    control.setDelay(delay);
-}
-
-template <typename T>
-pair <Block*, const Port*> Constant<T>::getConnectedPort() {
-    return connectedPort;
-}
-
-template <typename T>
-void Constant<T>::setConnectedPort(pair <Block*, const Port*> connection) {
-    connectedPort = connection;
-}
-
-template <typename T>
-bool Constant<T>::connectionAvailable() {
-    return (connectedPort.first == nullptr and
-        connectedPort.second == -1);
-}
-
-template <typename T>
-const Port* Constant<T>::getControlInPort() {
-    return &control;
+void Constant<T>::resetCounter() {
+    instanceCounter = 1;
 }
 
 template <typename T>
@@ -292,7 +271,7 @@ void Constant<T>::printBlock(ostream &file) {
     }
     else if (blockDelay > 0) file << ", delay = " << blockDelay;
     file << ", ";
-    file << "value = " << constant;
+    file << "value = " << value;
     file << "];" << endl;
 }
 
@@ -301,7 +280,7 @@ class Fork : public Block {
 
 public:
 
-    Fork(int numOutPorts = 2, int blockDelay = 0);
+    Fork(int blockDelay = 0);
     ~Fork();
 
     void setDataInPortWidth(int width);
@@ -327,7 +306,6 @@ private:
     vector <Port> dataOut;
     static int instanceCounter;
     vector <pair <Block*, const Port*> > connectedPorts;
-    void addOutPort();
 
 };
 
@@ -336,8 +314,10 @@ class Merge : public Block {
 
 public:
 
-    Merge(int numInPorts = 2, int blockDelay = 0);
+    Merge(int blockDelay = 0);
     ~Merge();
+
+    const Port* addDataInPort(int width = -1, int delay = 0);
 
     void setDataInPortWidth(int index, int width);
     void setDataOutPortWidth(int width);
@@ -491,112 +471,146 @@ private:
 
 };
 
+class EntryInterf : public Block {
 
-class Entry : public Block {
+public:
+
+    void setInPortDelay(int delay);
+
+    pair <Block*, const Port*> getConnectedPort() override;
+    void setConnectedPort(pair <Block*, const Port*> connection) override;
+    bool connectionAvailable() override;
+
+    void printBlock(ostream &file) override;
+
+
+protected:
+    EntryInterf();
+    EntryInterf(const string& blockName, int portWidth = -1, int blockDelay = 0);
+    ~EntryInterf();
+    Port outPort;
+    pair <Block*, const Port*> connectedPort;
+
+};
+
+
+class Entry : public EntryInterf {
 
 public:
 
     Entry(int blockDelay = 0);
     ~Entry();
 
-    void setControlPortDelay(int delay);
-
     static void resetCounter();
-
-    pair <Block*, const Port*> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, const Port*> connection) override;
-    bool connectionAvailable() override;
-
-    void printBlock(ostream &file) override;
   
 private:
 
-    Port control;
     static int instanceCounter;
-    pair <Block*, const Port*> connectedPort;
-
 };
 
 
-class Argument : public Block {
+class Argument : public EntryInterf {
 
 public:
 
-    Argument(int blockDelay = 0);
+    Argument(int width, int blockDelay = 0);
     ~Argument();
 
     void setDataPortWidth(int width);
 
-    void setDataPortDelay(int delay);
+    void setControlPortDelay(int delay);
 
+    const Port* getControlInPort();
+    
     static void resetCounter();
+
+private:
+
+    Port inControl;
+    static int instanceCounter;
+
+};
+
+
+class ExitInterf : public Block {
+
+public:
+
+    void setInPortDelay(int delay);
 
     pair <Block*, const Port*> getConnectedPort() override;
     void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
+    const Port* getInPort();
+
     void printBlock(ostream &file) override;
 
-private:
 
-    Port data;
-    static int instanceCounter;
-    pair <Block*, const Port*> connectedPort;
+protected:
+    ExitInterf();
+    ExitInterf(const string& blockName, int width = -1, int delay = 0);
+    ~ExitInterf();
+    Port inPort;
 
 };
 
 
-class Exit : public Block {
+class Exit : public ExitInterf {
 
 public:
 
     Exit(int blockDelay = 0);
     ~Exit();
-    void setControlPortDelay(int delay);
 
     static void resetCounter();
 
-    pair <Block*, const Port*> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, const Port*> connection) override;
-    bool connectionAvailable() override;
-
-    const Port* getControlInPort();
-    
-    void printBlock(ostream &file) override;
-
 private:
 
-    Port control;
     static int instanceCounter;
 
 };
 
 
-class Return : public Block {
+class Return : public ExitInterf {
 
 public:
 
-    Return(int blockDelay = 0);
+    Return(int portWidth = -1, int blockDelay = 0);
     ~Return();
     
     void setDataPortWidth(int width);
-
-    void setDataPortDelay(int delay);
     
     static void resetCounter();
 
-    pair <Block*, const Port*> getConnectedPort() override;
-    void setConnectedPort(pair <Block*, const Port*> connection) override;
-    bool connectionAvailable() override;
+private:
 
-    const Port* getDataInPort();
+    static int instanceCounter;
 
-    void printBlock(ostream &file) override;
+};
+
+class Store : public ExitInterf {
+
+public:
+
+    Store(int blockDelay = 0);
+    ~Store();
+    
+    void setDataPortWidth(int width);
+    void setAddrPortWidth(int width);
+
+    const Port* getAddrPort();
+    const Port* getAlignPort();
+    
+    static void resetCounter();
+
+    virtual void printBlock(ostream& file) override;
 
 private:
 
-    Port data;
     static int instanceCounter;
+    Port inPortAddr;
+    Port inPortAlign;
 
 };
 

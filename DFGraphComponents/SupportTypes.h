@@ -28,30 +28,7 @@ ostream &operator << (ostream &out, BlockType blockType);
 
 enum UnaryOpType {
     Not = 0,
-    True,
-    False,
     Load,
-    Alloca
-};
-
-enum BinaryOpType {
-    Add = 0,
-    Sub,
-    Mul,
-    Div,
-    Rem,
-    And,
-    Or,
-    Xor,
-    ShiftL,
-    ShiftR,
-    Eq,
-    NE,
-    GT,
-    LT,
-    GE,
-    LE,
-    AllocaVector,
     IntTrunc,
     FPointTrunc,
     IntZExt,
@@ -64,6 +41,39 @@ enum BinaryOpType {
     PtrToInt,
     TypeCast,
     AddrSpaceCast
+};
+
+enum BinaryOpType {
+    Add = 0,
+    FAdd,
+    Sub,
+    FSub,
+    Mul,
+    FMul,
+    Div,
+    FDiv,
+    Rem,
+    FRem,
+    And,
+    Or,
+    Xor,
+    ShiftL,
+    ShiftR,
+    Eq,
+    FEq,
+    NE,
+    FNE,
+    GT,
+    FGT,
+    LT,
+    FLT,
+    GE,
+    FGE,
+    LE,
+    FLE,
+    True,
+    False,
+    Alloca
 };
 
 

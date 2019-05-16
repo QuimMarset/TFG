@@ -31,30 +31,48 @@ public:
 
 private:
 
-    void processBinaryInst(const Instruction &inst, 
-        map <StringRef, Block*>& bbVars, DFGraph& graph, const DataLayout &dl);
-    
-    void processPhiInst(const Instruction &inst,
-        map <StringRef, map <StringRef, Block*> >& vars, DFGraph& graph, 
-        const DataLayout &dl);
+    DFGraph graph;
+    map <StringRef, map <StringRef, Block*> > varsMapping;
+    map <StringRef, Block*> controlBlocks;
+    map <const BasicBlock*, map<StringRef, pair<Merge*,const BasicBlock*> > > varsMerges;
+    map <const BasicBlock*, Merge*> controlMerges;
+    DataLayout DL;
+    LiveVarsPass* liveness;
 
-    void processAllocaInst(const Instruction &inst,
-        map <StringRef, Block*>& vars, DFGraph& graph, const DataLayout &dl);
+    void processBinaryInst(const Instruction &inst);
     
-    void processLoadInst(const Instruction &inst,
-        map <StringRef, Block*>& vars, DFGraph& graph, const DataLayout &dl);
+    void processPhiInst(const Instruction &inst);
 
-    void processStoreInst(const Instruction &inst,
-        map <StringRef, Block*>& vars, DFGraph& graph, const DataLayout &dl);
+    void processAllocaInst(const Instruction &inst);
     
+    void processLoadInst(const Instruction &inst);
+
+    void processStoreInst(const Instruction &inst);
+    
+    void processCastInst(const Instruction &inst);
+
+    void processSelectInst(const Instruction &inst);
+
+    void processReturnInst(const Instruction &inst);
+
+    void processBranchInst(const Instruction &inst);
 
 
     void processOperator(const Value* operand, pair <Block*, const Port*> connection,
-        map <StringRef, Block*>& bbVars, DFGraph& graph);
+        const BasicBlock* BB);
 
-    void processLiveVars(const LiveVarsPass& liveness, const BasicBlock& bb);
-    void createBlockControl();
-    void printGraph();
+    void processBBEntryControl(const BasicBlock* BB); 
+    void connectOrphanBlock(pair <Block*, const Port*> connection, const BasicBlock* BB);
+    void processBBExitControl(const Instruction& inst, const BasicBlock* BB);
+
+    Fork* connectBlocks(Block* block, pair<Block*, const Port*> connection);
+
+    void connectMerges();
+    void connectControlMerges();
+
+    ConstantInterf* createConstant(const Value* operand, const BasicBlock* BB);
+
+    void printGraph(Function& F);
 
 };
 
