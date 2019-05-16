@@ -1,8 +1,6 @@
 
-#include "DFGraph.h"
 #include <iostream>
 
-using namespace DFGraphComp;
 
 int main () {
 

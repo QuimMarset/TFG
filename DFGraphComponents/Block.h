@@ -19,7 +19,7 @@ public:
 
     Block();
     Block(const string &blockName, BlockType type, int blockDelay);
-    ~Block();
+    virtual ~Block();
 
     string getBlockName();
     void setBlockName(const string &blockName);
@@ -50,7 +50,7 @@ public:
 
     Operator(const string& blockName, int blockDelay = 0, 
         int latency = 0, int II = 0);
-    ~Operator();
+    virtual ~Operator();
 
     void setLatency(int latency);
     void setII(int II);
@@ -178,8 +178,6 @@ class ConstantInterf : public Block {
 
 public:
 
-    ~ConstantInterf();
-
     void setDataPortWidth(int width);
 
     void setControlPortDelay(int delay);
@@ -195,6 +193,7 @@ protected:
 
     ConstantInterf();
     ConstantInterf(const string& blockName, int porWidth = -1, int blockDelay = 0);
+    virtual ~ConstantInterf();
     Port control;
     Port data;
     pair <Block*, const Port*> connectedPort;
@@ -226,9 +225,8 @@ int Constant<T>::instanceCounter = 1;
 
 template <typename T>
 Constant<T>::Constant(T value, int portWidth, int blockDelay)
-        : ConstantInterf("Constant" + to_string(instanceCounter), 
-        portWidth, blockDelay), control("control", Port::Base, 0), 
-        data("out"), connectedPort(nullptr, nullptr) 
+    : ConstantInterf("Constant" + to_string(instanceCounter), 
+    portWidth, blockDelay)
 {
     ++instanceCounter;
     this->value = value;
@@ -252,18 +250,17 @@ void Constant<T>::resetCounter() {
 template <typename T>
 void Constant<T>::printBlock(ostream &file) {
     file << blockName << "[type = Constant";
-    if (defaultPortWidth >= 0) file << defaultPortWidth;
     file << ", in = \"" << control << "\"";
     file << ", out = \"" << data << "\"";
     if (control.getDelay() > 0) {
         file << ", delay = \"" ;
-        file << control.getName() << ":" << control.getDelay() 
+        file << control.getName() << ":" << control.getDelay();
         if (blockDelay > 0) file << " " << blockDelay;
-        if (dataOut.getDelay > 0) file << " " << data.getName() << 
+        if (data.getDelay() > 0) file << " " << data.getName() << 
             ":" << data.getDelay();
         file << "\"";
     }
-    else if (data.getDelay > 0) {
+    else if (data.getDelay() > 0) {
         file << ", delay = \"";
         if (blockDelay > 0) file << blockDelay;
         file << " " << data.getName() << 
@@ -284,11 +281,11 @@ public:
     ~Fork();
 
     void setDataInPortWidth(int width);
-    void setDataOutPortWidth(int index, int width);
+    void setDataOutPortWidth(unsigned int index, int width);
     void setDataPortWidth(int width);
 
     void setDataInPortDelay(int delay);
-    void setDataOutPortDelay(int index, int delay);
+    void setDataOutPortDelay(unsigned int index, int delay);
 
     static void resetCounter();
 
@@ -319,11 +316,11 @@ public:
 
     const Port* addDataInPort(int width = -1, int delay = 0);
 
-    void setDataInPortWidth(int index, int width);
+    void setDataInPortWidth(unsigned int index, int width);
     void setDataOutPortWidth(int width);
     void setDataPortWidth(int width);
 
-    void setDataInPortDelay(int index, int delay);
+    void setDataInPortDelay(unsigned int index, int delay);
     void setDataOutPortDelay(int delay);
 
     static void resetCounter();
@@ -332,7 +329,7 @@ public:
     void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    const Port* getDataInPort(int index);
+    const Port* getDataInPort(unsigned int index);
 
     void printBlock(ostream &file) override;
 
@@ -442,12 +439,12 @@ public:
     ~Demux();
 
     void setDataInPortWidth(int width);
-    void setDataOutPortWidth(int index, int width);
+    void setDataOutPortWidth(unsigned int index, int width);
     void setDataPortWidth(int width);
 
-    void setControlPortDelay(int index, int delay);
+    void setControlPortDelay(unsigned int index, int delay);
     void setDataInPortDelay(int delay);
-    void setDataOutPortDelay(int index, int delay);
+    void setDataOutPortDelay(unsigned int index, int delay);
 
     static void resetCounter();
 
@@ -455,7 +452,7 @@ public:
     void setConnectedPort(pair <Block*, const Port*> connection) override;
     bool connectionAvailable() override;
 
-    const Port* getControlInPort(int index);
+    const Port* getControlInPort(unsigned int index);
     const Port* getDataInPort();
 
     void printBlock(ostream &file) override;
@@ -467,7 +464,7 @@ private:
     vector <Port> dataOut;
     static int instanceCounter;
     vector <pair <Block*, const Port*> > connectedPorts;
-    int nextOutPort;
+    unsigned int nextOutPort;
 
 };
 
@@ -487,7 +484,7 @@ public:
 protected:
     EntryInterf();
     EntryInterf(const string& blockName, int portWidth = -1, int blockDelay = 0);
-    ~EntryInterf();
+    virtual ~EntryInterf();
     Port outPort;
     pair <Block*, const Port*> connectedPort;
 
@@ -550,7 +547,7 @@ public:
 protected:
     ExitInterf();
     ExitInterf(const string& blockName, int width = -1, int delay = 0);
-    ~ExitInterf();
+    virtual ~ExitInterf();
     Port inPort;
 
 };
