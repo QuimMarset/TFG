@@ -32,9 +32,9 @@ public:
 private:
 
     DFGraph graph;
-    map <StringRef, map <StringRef, Block*> > varsMapping;
+    map <StringRef, map <const Value*, Block*> > varsMapping;
     map <StringRef, Block*> controlBlocks;
-    map <const BasicBlock*, map<StringRef, pair<Merge*,const BasicBlock*> > > varsMerges;
+    map <const BasicBlock*, map <const BasicBlock*, set <pair<Merge*, const Value*> > > > varsMerges;
     map <const BasicBlock*, Merge*> controlMerges;
     DataLayout DL;
     LiveVarsPass* liveness;
@@ -61,9 +61,13 @@ private:
     void processOperator(const Value* operand, pair <Block*, const Port*> connection,
         const BasicBlock* BB);
 
+    void processPhiConstants(const BasicBlock* BB);
+
+    void processLiveIn(const BasicBlock* BB);
+
     void processBBEntryControl(const BasicBlock* BB); 
     void connectOrphanBlock(pair <Block*, const Port*> connection, const BasicBlock* BB);
-    void processBBExitControl(const Instruction& inst, const BasicBlock* BB);
+    void processBBExitControl(const BasicBlock* BB);
 
     Fork* connectBlocks(Block* block, pair<Block*, const Port*> connection);
 

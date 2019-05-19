@@ -19,20 +19,22 @@ class BBGraph
 public:
 
     BBGraph();
-    BBGraph(const string &bbName);
+    BBGraph(const string &BBName);
     ~BBGraph();
 
     void addBlock(Block *block);
 
+    string getBBName();
+
     void freeBB();
 
     void printBB(ostream &file);
+    void printChannels(ostream& file);
 
 private:
 
-    string bbName;
+    string BBName;
     vector <Block*> blocks;
-
 
 };
 
@@ -43,17 +45,17 @@ class DFGraph
 public:
 
     DFGraph();
-    DFGraph(const string &functionName);
+    DFGraph(const string& functionName);
     ~DFGraph();
 
-    void addBasicBlock(const BBGraph& bb);
+    void addBasicBlock();
+
     void addBlockToBB(Block* block);
-    void addBranch(Branch* branch);
 
     string getFunctionName();
 
     int getDefaultPortWidth();
-    void setDefaultPortWidth(int width);
+    void setDefaultPortWidth(int width = -1);
 
     void freeGraph();
 
@@ -63,6 +65,7 @@ private:
     int defaultPortWidth;
     string functionName;
     vector <BBGraph> basicBlocks;
+
 };
 
 

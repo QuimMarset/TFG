@@ -59,8 +59,8 @@ ostream &operator << (ostream &out, BlockType blockType) {
  * =================================
 */
 
-int numberUnary = 4;
-int numberBinary = 16;
+int numberUnary = 13;
+int numberBinary = 30;
 
 string getUnaryOpName(UnaryOpType op) {
     switch (op)
@@ -215,50 +215,50 @@ string getBinaryOpName(BinaryOpType op) {
 ostream &operator << (ostream& out, UnaryOpType op) {
     switch (op)
     {
-    case Not:
-        out << "not";
-        break;
-    case Load:
-        out << "load";
-        break;
-    case IntTrunc:
-        out << "intTrunc";
-        break;
-    case FPointTrunc:
-        out << "fPointTrunc";
-        break;
-    case IntZExt:
-        out << "intZExt";
-        break;
-    case IntSExt:
-        out << "intSExt";
-        break;
-    case FPointToUInt:
-        out << "fPointToUInt";
-        break;
-    case FPointToSInt:
-        out << "fPointToSInt";
-        break;
-    case UIntToFPoint:
-        out << "uIntToFPoint";
-        break;
-    case SIntToFPoint:
-        out << "sIntToFPoint";
-        break;
-    case IntToPtr:
-        out << "intToPtr";
-        break;
-    case PtrToInt:
-        out << "ptrToInt";
-        break;
-    case TypeCast:
-        out << "typeCast";
-        break;
-    case AddrSpaceCast:
-        out << "addrSpaceCast";
-        break;
-    default:
-        break;
+        case Not:
+            out << "not";
+            break;
+        case Load:
+            out << "load";
+            break;
+        case IntTrunc:
+            out << "intTrunc";
+            break;
+        case FPointTrunc:
+            out << "fPointTrunc";
+            break;
+        case IntZExt:
+            out << "intZExt";
+            break;
+        case IntSExt:
+            out << "intSExt";
+            break;
+        case FPointToUInt:
+            out << "fPointToUInt";
+            break;
+        case FPointToSInt:
+            out << "fPointToSInt";
+            break;
+        case UIntToFPoint:
+            out << "uIntToFPoint";
+            break;
+        case SIntToFPoint:
+            out << "sIntToFPoint";
+            break;
+        case IntToPtr:
+            out << "intToPtr";
+            break;
+        case PtrToInt:
+            out << "ptrToInt";
+            break;
+        case TypeCast:
+            out << "typeCast";
+            break;
+        case AddrSpaceCast:
+            out << "addrSpaceCast";
+            break;
+        default:
+            break;
     }
     return out;
 }

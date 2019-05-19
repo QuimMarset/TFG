@@ -22,18 +22,9 @@ class LiveVarsPass : public FunctionPass {
 
 public:
 
-    using FuncName = StringRef;
-    using BBName = StringRef;
-    using UseSet = set <StringRef>;
-    using DefSet = set <StringRef>;
-    using LiveInSet = set <StringRef>;
-    using LiveOutSet = set <StringRef>;
-    using FuncLiveInVars = map <BBName, LiveInSet>;
-    using FuncLiveOutVars = map <BBName, LiveOutSet>;
-
-    vector <FuncLiveInVars> liveInVars;
-    vector <FuncLiveOutVars> liveOutVars;
-    map <FuncName, int> indexation;
+    map <StringRef, set<const Value*> > liveInVars;
+    map <StringRef, set<const Value*> > liveOutVars;
+    map <StringRef, set<const Value*> > phiConstants;
 
     static char ID;
 
@@ -41,25 +32,27 @@ public:
     ~LiveVarsPass();
 
     string getInputFileName();
-    int getIndexCurrentFunction();
-    FuncName getCurrentFuncName();
-    
-    int getIndexFunc(FuncName name);
+    StringRef getFuncName();
     
     bool runOnFunction(Function &F) override;
 
 private:
 
     string inputFileName;
-    FuncName funcName; // Current function running the analysis pass
-    int index; // Index with the position of the function's maps
+    StringRef funcName; // Current function running the analysis pass
 
-    void computeUsesDefs(const BasicBlock &BB, UseSet &uses, DefSet &defs);
-    bool iterateBasicBlock(const BasicBlock &BB, const UseSet &uses, const DefSet &defs, 
-        FuncLiveInVars &livesIn, FuncLiveOutVars &livesOut);
-    void printLiveVarsAnalysis();
+    void computeUsesDefs(const BasicBlock &BB, set<const Value*> &uses, 
+        set<const Value*> &defs);
+
+    bool iterateBasicBlock(const BasicBlock &BB, const set<const Value*> &uses, 
+        const set<const Value*> &defs, map<StringRef, set<const Value*> > &livesIn, 
+        map<StringRef, set<const Value*> > &livesOut);
+
+    void printLiveVarsAnalysis(Function& F);
+
     void setInputFileName(StringRef name);
-    void setCurrentFunc(const Function &F);
+
+    void setCurrentFunc(Function& F);
 
 };
 

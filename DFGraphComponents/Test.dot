@@ -1,0 +1,12 @@
+digraph "DataFlow Graph for 'test' function" {
+	label="DataFlow Graph for 'test' function";
+
+	channel_width = 160
+	subgraph cluster_BB1 { 
+		Constant1[type = Constant, in = "control:0", out = "out:32", value = 1];
+		Constant2[type = Constant, in = "control:0", out = "out:32", value = 2];
+		Constant3[type = Constant, in = "control:0", out = "out:32", value = 5];
+		label = "BB1"
+	}
+
+}

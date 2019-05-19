@@ -12,16 +12,22 @@ namespace DFGraphComp
 */
 
 
-BBGraph::BBGraph() {}
+BBGraph::BBGraph() {
+    BBName = "";
+}
 
-BBGraph::BBGraph(const string &bbName){
-    this->bbName = bbName;
+BBGraph::BBGraph(const string &BBName){
+    this->BBName = BBName;
 }
 
 BBGraph::~BBGraph() {}
 
 void BBGraph::addBlock(Block* block) {
     blocks.push_back(block);
+}
+
+string BBGraph::getBBName() {
+    return BBName;
 }
 
 void BBGraph::freeBB() {
@@ -31,16 +37,23 @@ void BBGraph::freeBB() {
 }
 
 void BBGraph::printBB(ostream &file) {
-    assert(bbName.length() > 0);
-    file << "\tsubgraph cluster_" << bbName << " { " << endl;
+    assert(BBName.length() > 0);
+    file << "\tsubgraph cluster_" << BBName << " { " << endl;
     for (Block* block : blocks) {
         file << "\t\t";
         block->printBlock(file);
     }
-    file << "\t\tlabel = \"" << bbName << "\"" << endl;
+    file << "\t\tlabel = \"" << BBName << "\"" << endl;
     file << "\t}" << endl;
 }
 
+void BBGraph::printChannels(ostream& file) {
+    file << "// " << BBName << endl;
+    for (Block* block : blocks) {
+        cout << block->getBlockName() << endl;
+        block->printChannels(file);
+    }
+}
 
 /*
  * =================================
@@ -49,16 +62,20 @@ void BBGraph::printBB(ostream &file) {
 */
 
 
-DFGraph::DFGraph() {}
+DFGraph::DFGraph() {
+    functionName = "";
+    defaultPortWidth = -1;
+}
 
 DFGraph::DFGraph(const string &functionName) {
     this->functionName = functionName;
+    defaultPortWidth = -1;
 }
 
 DFGraph::~DFGraph() {}
 
-void DFGraph::addBasicBlock(const BBGraph& bb) {
-    basicBlocks.push_back(bb);
+void DFGraph::addBasicBlock() {
+    basicBlocks.push_back("BB" + to_string(basicBlocks.size()));
 }
 
 void DFGraph::addBlockToBB(Block* block) {
@@ -79,8 +96,8 @@ void DFGraph::setDefaultPortWidth(int width) {
 }
 
 void DFGraph::freeGraph() {
-    for (BBGraph& BB : basicBlocks) {
-        BB.freeBB();
+    for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
+        basicBlocks[i].freeBB();
     }
 }
 
@@ -92,8 +109,12 @@ void DFGraph::printGraph(ostream &file) {
     if (defaultPortWidth >= 0) {
         file << "\tchannel_width = " << defaultPortWidth << endl;
     }
-    for (BBGraph& bb : basicBlocks) {
-        bb.printBB(file);
+    for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
+        basicBlocks[i].printBB(file);
+    }
+    for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
+        if (i > 0) file << endl;
+        basicBlocks[i].printChannels(file);
     }
     file << endl;
     file << "}" << endl;
