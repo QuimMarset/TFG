@@ -26,6 +26,10 @@ void BBGraph::addBlock(Block* block) {
     blocks.push_back(block);
 }
 
+void BBGraph::addControlBlock(Block* block) {
+    controlBlocks.push_back(block);
+}
+
 string BBGraph::getBBName() {
     return BBName;
 }
@@ -51,6 +55,24 @@ void BBGraph::printChannels(ostream& file) {
     file << "// " << BBName << endl;
     for (Block* block : blocks) {
         cout << block->getBlockName() << endl;
+        block->printChannels(file);
+    }
+}
+
+void BBGraph::printControlBlocks(ostream& file) {
+    assert(BBName.length() > 0);
+    file << "\tsubgraph cluster_Control_" << BBName << " { " << endl;
+    for (Block* block : controlBlocks) {
+        file << "\t\t";
+        block->printBlock(file);
+    }
+    file << "\t\tlabel = \"Control_" << BBName << "\"" << endl;
+    file << "\t}" << endl;
+}
+
+void BBGraph::printControlChannels(ostream& file) {
+    file << "// Control_" << BBName << endl;
+    for (Block* block: controlBlocks) {
         block->printChannels(file);
     }
 }
@@ -83,8 +105,9 @@ void DFGraph::addBlockToBB(Block* block) {
     currentBB.addBlock(block);
 }
 
-void DFGraph::addControlBlock(Block* block) {
-    controlBlocks.push_back(block);
+void DFGraph::addControlBlockToBB(Block* block) {
+    BBGraph& currentBB = basicBlocks.back();
+    currentBB.addControlBlock(block);
 }
 
 string DFGraph::getFunctionName() {
@@ -117,21 +140,17 @@ void DFGraph::printGraph(ostream &file) {
         file << endl;
         basicBlocks[i].printBB(file);
     }
-    for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
-        if (i == 0) {
-            file << endl;
-            file << "// Control Blocks" << endl;
-        }
-        controlBlocks[i]->printBlock(file);
+    for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
+        file << endl;
+        basicBlocks[i].printControlBlocks(file);
     }
     for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
         file << endl;
         basicBlocks[i].printChannels(file);
     }
-    file << endl;
-    file << "// Control Blocks Channels" << endl;
-    for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
-        controlBlocks[i]->printChannels(file);
+    for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
+        file << endl;
+        basicBlocks[i].printControlChannels(file);
     }
     file << endl;
     file << "}" << endl;

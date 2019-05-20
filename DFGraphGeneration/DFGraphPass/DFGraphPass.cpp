@@ -518,7 +518,7 @@ void DFGraphPass::processBBEntryControl(const BasicBlock* BB)
         controlMerges[BB] = merge;
         controlEntry = merge;
     }
-    graph.addControlBlock(controlEntry);
+    graph.addControlBlockToBB(controlEntry);
     controlBlocks[BB->getName()] = controlEntry;
 }
 
@@ -528,7 +528,7 @@ void DFGraphPass::connectOrphanBlock(pair <Block*, const Port*> connection, cons
     Fork* fork = connectBlocks(control, connection);
     if (fork != nullptr) {
         controlBlocks[BB->getName()] = fork;
-        graph.addControlBlock(fork);
+        graph.addControlBlockToBB(fork);
     }
 }
 
@@ -557,14 +557,14 @@ void DFGraphPass::processBBExitControl(const BasicBlock* BB) {
                 DFGraphComp::Constant<bool>* cstTrue = new DFGraphComp::Constant<bool>(true, 1);
                 connectOrphanBlock(make_pair(cstTrue, cstTrue->getControlInPort()), BB);
                 cstTrue->setConnectedPort(connectionCond);
-                graph.addControlBlock(cstTrue);
+                graph.addControlBlockToBB(cstTrue);
             }
         }
     }
-    graph.addControlBlock(controlExit);
+    graph.addControlBlockToBB(controlExit);
     control = controlBlocks[BB->getName()];
     Fork* fork = connectBlocks(control, connection);
-    if (fork != nullptr) graph.addControlBlock(fork);
+    if (fork != nullptr) graph.addControlBlockToBB(fork);
     controlBlocks[BB->getName()] = controlExit;
 }
 

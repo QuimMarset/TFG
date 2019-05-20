@@ -23,6 +23,7 @@ public:
     ~BBGraph();
 
     void addBlock(Block *block);
+    void addControlBlock(Block* block);
 
     string getBBName();
 
@@ -30,11 +31,14 @@ public:
 
     void printBB(ostream &file);
     void printChannels(ostream& file);
+    void printControlBlocks(ostream& file);
+    void printControlChannels(ostream& file);
 
 private:
 
     string BBName;
     vector <Block*> blocks;
+    vector <Block*> controlBlocks;
 
 };
 
@@ -51,8 +55,7 @@ public:
     void addBasicBlock();
 
     void addBlockToBB(Block* block);
-
-    void addControlBlock(Block* block);
+    void addControlBlockToBB(Block* block);
 
     string getFunctionName();
 
@@ -67,7 +70,6 @@ private:
     int defaultPortWidth;
     string functionName;
     vector <BBGraph> basicBlocks;
-    vector <Block*> controlBlocks;
 
 };
 
