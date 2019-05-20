@@ -52,6 +52,8 @@ public:
 
     void addBlockToBB(Block* block);
 
+    void addControlBlock(Block* block);
+
     string getFunctionName();
 
     int getDefaultPortWidth();
@@ -65,6 +67,7 @@ private:
     int defaultPortWidth;
     string functionName;
     vector <BBGraph> basicBlocks;
+    vector <Block*> controlBlocks;
 
 };
 

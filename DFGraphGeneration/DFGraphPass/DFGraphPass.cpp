@@ -36,6 +36,7 @@ bool DFGraphPass::runOnFunction(Function &F) {
         else {
             processLiveIn(&BB);
         }
+        processPhiConstants(&BB);
         for (BasicBlock::const_iterator inst_it = BB.begin(); inst_it != BB.end(); 
             ++inst_it) 
         {
@@ -86,7 +87,6 @@ bool DFGraphPass::runOnFunction(Function &F) {
                 assert(0 && "Not supported (currently)");
             }
         }
-        processPhiConstants(&BB);
         processBBExitControl(&BB);
     }//TODO: Globals vars (allocate memory)
     connectMerges();
@@ -378,53 +378,67 @@ void DFGraphPass::processReturnInst(const Instruction &inst)
     varsMapping[BB->getName()][&inst] = retBlock;
 }
 
+
 void DFGraphPass::processBranchInst(const Instruction &inst)
 {
     const BasicBlock* BB = inst.getParent();
     StringRef BBName = BB->getName();
     const BranchInst* branchInst = cast<BranchInst>(&inst);
     const set<const Value*>& BBLiveOut = liveness->liveOutVars[BBName];
-    unsigned int numBranch = BBLiveOut.size();
+    const set<const Value*>& BBPhiConstants = liveness->phiConstants[BBName];
+    unsigned int numBranch = BBLiveOut.size() + BBPhiConstants.size();
     Value* condition = nullptr;
     Block* conditionTrue = nullptr;
     if (branchInst->isConditional()) {
         condition = branchInst->getCondition();
     }
     else {
-        // DFGraphComp::Constant<bool>* cstTrue = new DFGraphComp::Constant<bool>(true, 1);
-        // connectOrphanBlock(make_pair(cstTrue, cstTrue->getControlInPort()), BB);
-        // graph.addBlockToBB(cstTrue);
-        // if (numBranch > 1) {
-        //     Fork* fork = new Fork();
-        //     graph.addBlockToBB(fork);
-        //     cstTrue->setConnectedPort(make_pair(fork, fork->getDataInPort()));
-        //     conditionTrue = fork;
-        // }
-        // else conditionTrue = cstTrue;
+        DFGraphComp::Constant<bool>* cstTrue = new DFGraphComp::Constant<bool>(true, 1);
+        connectOrphanBlock(make_pair(cstTrue, cstTrue->getControlInPort()), BB);
+        graph.addBlockToBB(cstTrue);
+        if (numBranch > 1) {
+            Fork* fork = new Fork();
+            graph.addBlockToBB(fork);
+            cstTrue->setConnectedPort(make_pair(fork, fork->getDataInPort()));
+            conditionTrue = fork;
+        }
+        else conditionTrue = cstTrue;
     }
     for (set<const Value*>::const_iterator it = BBLiveOut.begin(); it != BBLiveOut.end(); ++it) {
         const Value* value = *it;
         Block* blockVar = varsMapping[BBName][value];
-        if (varsMapping[BBName].find(value) != varsMapping[BBName].end()) {
-            blockVar = varsMapping[BBName][value];
-        }   
-        else {
-            errs() << "No hauria d'entrar aqui\n";
-        }
         Branch* branchBlock = new Branch();
+        pair <Block*, const Port*> connectionCond = make_pair(branchBlock, 
+            branchBlock->getConditionInPort());
         if (condition) {
-            processOperator(condition, make_pair(branchBlock, branchBlock->getConditionInPort()), 
-                BB);
+            processOperator(condition, connectionCond, BB);
         }
         else { 
-            DFGraphComp::Constant<bool>* cstTrue = new DFGraphComp::Constant<bool>(true, 1);
-            connectOrphanBlock(make_pair(cstTrue, cstTrue->getControlInPort()), BB);
-            graph.addBlockToBB(cstTrue);
-            cstTrue->setConnectedPort(make_pair(branchBlock, branchBlock->getConditionInPort()));
-            // connectBlocks(conditionTrue, make_pair(branchBlock, branchBlock->getConditionInPort()));
+            conditionTrue->setConnectedPort(connectionCond);
         }
-        blockVar = varsMapping[BBName][value];
-        connectBlocks(blockVar, make_pair(branchBlock, branchBlock->getDataInPort()));
+        Fork* fork = connectBlocks(blockVar, make_pair(branchBlock, 
+            branchBlock->getDataInPort()));
+        if (fork != nullptr) graph.addBlockToBB(fork);
+        varsMapping[BBName][value] = branchBlock;
+        graph.addBlockToBB(branchBlock);
+    }
+    for(set<const Value*>::const_iterator it = BBPhiConstants.begin(); it != BBPhiConstants.end(); 
+        ++it)
+    {
+        const Value* value = *it;
+        Block* blockVar = varsMapping[BBName][value];
+        Branch* branchBlock = new Branch();
+        pair <Block*, const Port*> connectionCond = make_pair(branchBlock, 
+            branchBlock->getConditionInPort());
+        if (condition) {
+            processOperator(condition, connectionCond, BB);
+        }
+        else { 
+            conditionTrue->setConnectedPort(connectionCond);
+        }
+        Fork* fork = connectBlocks(blockVar, make_pair(branchBlock, 
+            branchBlock->getDataInPort()));
+        if (fork != nullptr) graph.addBlockToBB(fork);
         varsMapping[BBName][value] = branchBlock;
         graph.addBlockToBB(branchBlock);
     }
@@ -444,8 +458,10 @@ void DFGraphPass::processOperator(const Value* operand, pair<Block*, const Port*
         const set<const Value*>& BBLiveIn = liveness->liveInVars[BBName];
         if (varsMapping[BBName].find(operand) != varsMapping[BBName].end()) {
             Block* block = varsMapping[BBName][operand];
-            if (Fork* fork = connectBlocks(block, connection)) {
+            Fork* fork = connectBlocks(block, connection);
+            if (fork != nullptr) {
                 varsMapping[BBName][operand] = fork;
+                graph.addBlockToBB(fork);
             }
         }
         else if (BBLiveIn.find(operand) != BBLiveIn.end()) {
@@ -453,6 +469,7 @@ void DFGraphPass::processOperator(const Value* operand, pair<Block*, const Port*
         }
     }
 }
+
 
 void DFGraphPass::processLiveIn(const BasicBlock* BB) {
     StringRef BBName = BB->getName();
@@ -476,30 +493,18 @@ void DFGraphPass::processLiveIn(const BasicBlock* BB) {
     }
 }
 
+
 void DFGraphPass::processPhiConstants(const BasicBlock* BB) {
     StringRef BBName = BB->getName();
     for (set<const Value*>::const_iterator it = liveness->phiConstants[BBName].begin();
         it != liveness->phiConstants[BBName].end(); ++it)
     {
-        Branch* branch = new Branch();
         ConstantInterf* cst = createConstant(*it, BB);
-        cst->setConnectedPort(make_pair(branch, branch->getDataInPort()));
-        varsMapping[BBName][*it] = branch;
+        varsMapping[BBName][*it] = cst;
         graph.addBlockToBB(cst);
-        graph.addBlockToBB(branch);
-        const BranchInst* branchInst = cast<BranchInst>(BB->getTerminator());
-        if (branchInst->isConditional()) {
-            processOperator(branchInst->getCondition(), make_pair(branch, 
-                branch->getConditionInPort()), BB);
-        }
-        else {
-            DFGraphComp::Constant<bool>* cstTrue = new DFGraphComp::Constant<bool>(true, 1);
-            cstTrue->setConnectedPort(make_pair(branch, branch->getConditionInPort()));
-            connectOrphanBlock(make_pair(cstTrue, cstTrue->getControlInPort()), BB);
-            graph.addBlockToBB(cstTrue);
-        }
     }
 }
+
 
 void DFGraphPass::processBBEntryControl(const BasicBlock* BB) 
 {
@@ -513,17 +518,20 @@ void DFGraphPass::processBBEntryControl(const BasicBlock* BB)
         controlMerges[BB] = merge;
         controlEntry = merge;
     }
-    graph.addBlockToBB(controlEntry);
+    graph.addControlBlock(controlEntry);
     controlBlocks[BB->getName()] = controlEntry;
 }
 
 
 void DFGraphPass::connectOrphanBlock(pair <Block*, const Port*> connection, const BasicBlock* BB) {
     Block* control = controlBlocks[BB->getName()];
-    if (Fork* fork = connectBlocks(control, connection)) {
+    Fork* fork = connectBlocks(control, connection);
+    if (fork != nullptr) {
         controlBlocks[BB->getName()] = fork;
+        graph.addControlBlock(fork);
     }
 }
+
 
 void DFGraphPass::processBBExitControl(const BasicBlock* BB) {
     Block* controlExit;
@@ -549,13 +557,14 @@ void DFGraphPass::processBBExitControl(const BasicBlock* BB) {
                 DFGraphComp::Constant<bool>* cstTrue = new DFGraphComp::Constant<bool>(true, 1);
                 connectOrphanBlock(make_pair(cstTrue, cstTrue->getControlInPort()), BB);
                 cstTrue->setConnectedPort(connectionCond);
-                graph.addBlockToBB(cstTrue);
+                graph.addControlBlock(cstTrue);
             }
         }
     }
-    graph.addBlockToBB(controlExit);
+    graph.addControlBlock(controlExit);
     control = controlBlocks[BB->getName()];
-    connectBlocks(control, connection);
+    Fork* fork = connectBlocks(control, connection);
+    if (fork != nullptr) graph.addControlBlock(fork);
     controlBlocks[BB->getName()] = controlExit;
 }
 
@@ -571,7 +580,7 @@ Fork* DFGraphPass::connectBlocks(Block* block, pair<Block*, const Port*> connect
         fork->setConnectedPort(prevConnection);
         fork->setConnectedPort(connection);
         block->setConnectedPort(make_pair(fork, fork->getDataInPort()));
-        graph.addBlockToBB(fork);
+        // graph.addBlockToBB(fork);
         return fork;
     }
     return nullptr;
@@ -639,7 +648,6 @@ void DFGraphPass::connectControlMerges() {
         }
     }
 }
-
 
 
 ConstantInterf* DFGraphPass::createConstant(const Value* operand, const BasicBlock* BB) {

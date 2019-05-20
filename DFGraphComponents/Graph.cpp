@@ -83,6 +83,10 @@ void DFGraph::addBlockToBB(Block* block) {
     currentBB.addBlock(block);
 }
 
+void DFGraph::addControlBlock(Block* block) {
+    controlBlocks.push_back(block);
+}
+
 string DFGraph::getFunctionName() {
     return functionName;
 }
@@ -110,11 +114,24 @@ void DFGraph::printGraph(ostream &file) {
         file << "\tchannel_width = " << defaultPortWidth << endl;
     }
     for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
+        file << endl;
         basicBlocks[i].printBB(file);
     }
+    for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
+        if (i == 0) {
+            file << endl;
+            file << "// Control Blocks" << endl;
+        }
+        controlBlocks[i]->printBlock(file);
+    }
     for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
-        if (i > 0) file << endl;
+        file << endl;
         basicBlocks[i].printChannels(file);
+    }
+    file << endl;
+    file << "// Control Blocks Channels" << endl;
+    for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
+        controlBlocks[i]->printChannels(file);
     }
     file << endl;
     file << "}" << endl;
