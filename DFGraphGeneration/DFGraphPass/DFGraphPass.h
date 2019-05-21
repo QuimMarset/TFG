@@ -73,6 +73,8 @@ private:
 
     Fork* connectBlocks(Block* block, pair<Block*, const Port*> connection);
 
+    void connectMerge(Merge* merge, Branch* branch, 
+        const BasicBlock* BB, const BasicBlock* predBB);
     void connectMerges(const Function& F);
     void connectControlMerges();
 

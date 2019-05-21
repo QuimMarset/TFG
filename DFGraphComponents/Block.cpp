@@ -542,7 +542,6 @@ void Fork::printBlock(ostream& file ) {
 }
 
 void Fork::printChannels(ostream& file) {
-    cout << dataOut.size() << '\n';
     for (unsigned int i = 0; i < dataOut.size(); ++i) {
         assert(connectedPorts[i].first != nullptr and connectedPorts[i].second != nullptr);
         file << blockName << " -> " << connectedPorts[i].first->getBlockName() << " [from =" <<

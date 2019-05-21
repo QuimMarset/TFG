@@ -38,6 +38,9 @@ void BBGraph::freeBB() {
     for (Block* block : blocks) {
         delete block;
     }
+    for (Block* block : controlBlocks) {
+        delete block;
+    }
 }
 
 void BBGraph::printBB(ostream &file) {
@@ -114,6 +117,10 @@ string DFGraph::getFunctionName() {
     return functionName;
 }
 
+void DFGraph::setFunctionName(const string& funcitonName) {
+    this->functionName = funcitonName;
+}
+
 int DFGraph::getDefaultPortWidth() {
     return defaultPortWidth;
 }
@@ -126,6 +133,7 @@ void DFGraph::freeGraph() {
     for (unsigned int i = 0; i < basicBlocks.size(); ++i) {
         basicBlocks[i].freeBB();
     }
+    basicBlocks.clear();
 }
 
 void DFGraph::printGraph(ostream &file) {

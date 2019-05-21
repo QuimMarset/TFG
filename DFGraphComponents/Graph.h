@@ -58,6 +58,7 @@ public:
     void addControlBlockToBB(Block* block);
 
     string getFunctionName();
+    void setFunctionName(const string& funcitonName);
 
     int getDefaultPortWidth();
     void setDefaultPortWidth(int width = -1);

@@ -14,7 +14,7 @@ void DFGraphPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool DFGraphPass::runOnFunction(Function &F) {
     liveness = &getAnalysis<LiveVarsPass>();
-    graph = DFGraph(F.getName());
+    graph.setFunctionName(F.getName()); //TODO: Keep as pointers
     DL = DataLayout(F.getParent());
     bool firstBB = true;
     for (const BasicBlock& BB : F.getBasicBlockList()) {
@@ -216,11 +216,9 @@ void DFGraphPass::processPhiInst(const Instruction &inst)
     unsigned int resultTypeSize = DL.getTypeSizeInBits(phi->getType());
     Merge* merge = new Merge();
     merge->setDataOutPortWidth(resultTypeSize);
-    for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
-        varsMerges[BB][phi->getIncomingValue(i)] = merge;
-    }
-    graph.addBlockToBB(merge);
+    varsMerges[BB][&inst] = merge;
     varsMapping[BB->getName()][&inst] = merge;
+    graph.addBlockToBB(merge);
 }
 
 void DFGraphPass::processAllocaInst(const Instruction &inst) 
@@ -580,56 +578,53 @@ Fork* DFGraphPass::connectBlocks(Block* block, pair<Block*, const Port*> connect
     return nullptr;
 }
 
-
-void DFGraphPass::connectMerges(const Function& F) {
-    for (Function::const_iterator it = F.begin(); it != F.end(); ++it) {
-        const BasicBlock* BB = &(*it);
-        StringRef BBName = BB->getName();
-        for (set <const Value*>::const_iterator it2 = liveness->liveInVars[BBName].begin();
-            it2 != liveness->liveInVars[BBName].end(); ++it2)
-        {
-            const Value* value = *it2;
-            Merge* merge = varsMerges[BB][value];
-            for (const_pred_iterator it3 = pred_begin(BB); it3 != pred_end(BB); ++it3) {
-                const BasicBlock* predBB = *it3;
-                const BranchInst* branchInst = cast<BranchInst>(predBB->getTerminator());
-                Branch* branchBlock = (Branch*)varsMapping[predBB->getName()][value];
-                pair <Block*, const Port*> connection = make_pair(merge, merge->addDataInPort(0));
-                if (branchInst->getSuccessor(0) == BB) {
-                    if (branchInst->isConditional()) {
-                        branchBlock->setConnectedPortFalse(connection);
-                    }
-                    else {
-                        branchBlock->setConnectedPortTrue(connection);
-                    }
-                }
-                else if (branchInst->isConditional() and branchInst->getSuccessor(1) == BB) {
-                    branchBlock->setConnectedPortTrue(connection);
-                }
-            }
+void DFGraphPass::connectMerge(Merge* merge, Branch* branch, 
+    const BasicBlock* BB, const BasicBlock* predBB) 
+{
+    const BranchInst* branchInst = cast<BranchInst>(predBB->getTerminator());
+    pair <Block*, const Port*> connection = make_pair(merge, merge->addDataInPort(0));
+    if (branchInst->getSuccessor(0) == BB) {
+        if (branchInst->isConditional()) {
+            branch->setConnectedPortFalse(connection);
         }
-
-        for (BasicBlock::const_iterator it2 = BB->begin(); &(*it2) != BB->getFirstNonPHI(); ++it2) {
-            const PHINode* phi = cast<PHINode> (it2);
-            Value* value;
-            const BasicBlock* predBB;
-            for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
-                value = phi->getIncomingValue(i);
-                predBB = phi->getIncomingBlock(i);
-                Merge* merge = varsMerges[BB][value];
-                const BranchInst* branchInst = cast<BranchInst>(predBB->getTerminator());
-                Branch* branchBlock = (Branch*)varsMapping[predBB->getName()][value];
-                pair <Block*, const Port*> connection = make_pair(merge, merge->addDataInPort(0));
-                if (branchInst->getSuccessor(0) == BB) {
-                    if (branchInst->isConditional()) {
-                        branchBlock->setConnectedPortFalse(connection);
-                    }
-                    else {
-                        branchBlock->setConnectedPortTrue(connection);
-                    }
+        else {
+            branch->setConnectedPortTrue(connection);
+        }
+    }
+    else if (branchInst->isConditional() and branchInst->getSuccessor(1) == BB) {
+        branch->setConnectedPortTrue(connection);
+    }
+}
+ 
+void DFGraphPass::connectMerges(const Function& F) {
+    const BasicBlock* BB;
+    const BasicBlock* predBB;
+    const Value* value;
+    Merge* merge;
+    Branch* predBranch;
+    for (map <const BasicBlock*, map <const Value*, Merge*> >::const_iterator it =
+        varsMerges.begin(); it != varsMerges.end(); ++it)
+    {
+        BB = it->first;
+        for (map <const Value*, Merge*>::const_iterator it2 = varsMerges[BB].begin();
+            it2 != varsMerges[BB].end(); ++it2) 
+        {
+            value = it2->first;
+            merge = it2->second;
+            if (isa<PHINode>(value) and cast<PHINode>(value)->getParent() == BB) {
+                const PHINode* phi = cast<PHINode>(value);
+                for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
+                    predBB = phi->getIncomingBlock(i);
+                    predBranch = (Branch*)varsMapping[predBB->getName()][phi->getIncomingValue(i)];
+                    connectMerge(merge, predBranch, BB, predBB);
                 }
-                else if (branchInst->isConditional() and branchInst->getSuccessor(1) == BB) {
-                    branchBlock->setConnectedPortTrue(connection);
+            
+            }
+            else {
+                for (const_pred_iterator it3 = pred_begin(BB); it3 != pred_end(BB); ++it3) {
+                    predBB = *it3;
+                    predBranch = (Branch*)varsMapping[predBB->getName()][value];
+                    connectMerge(merge, predBranch, BB, predBB);
                 }
             }
         }
@@ -638,28 +633,19 @@ void DFGraphPass::connectMerges(const Function& F) {
 
 
 void DFGraphPass::connectControlMerges() {
+    const BasicBlock* BB;
+    const BasicBlock* predBB;
+    Merge* merge;
+    Branch* predBranch;
     for(map<const BasicBlock*, Merge*>::const_iterator it = controlMerges.begin(); it != 
         controlMerges.end(); ++it) 
     {
-        const BasicBlock* BB = it->first;
-        Merge* merge = it->second;
-        pair <Block*, const Port*> connection;
+        BB = it->first;
+        merge = it->second;
         for (const_pred_iterator it2 = pred_begin(BB); it2 != pred_end(BB); ++it2) {
-            connection = make_pair(merge, merge->addDataInPort());
-            const BasicBlock* pred = (*it2);
-            const BranchInst* predBranchInst = cast<BranchInst>(pred->getTerminator());
-            Branch* predControlBranch = (Branch*)controlBlocks[pred->getName()];
-            if (predBranchInst->getSuccessor(0) == BB) {
-                if (predBranchInst->isConditional()) {
-                    predControlBranch->setConnectedPortFalse(connection);
-                }
-                else {
-                    predControlBranch->setConnectedPortTrue(connection);
-                }
-            }
-            else if (predBranchInst->isConditional() and predBranchInst->getSuccessor(1) == BB) {
-                predControlBranch->setConnectedPortTrue(connection);
-            }
+            predBB = (*it2);
+            predBranch = (Branch*)controlBlocks[predBB->getName()];
+            connectMerge(merge, predBranch, BB, predBB);
         }
     }
 }
