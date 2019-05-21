@@ -22,9 +22,9 @@ class LiveVarsPass : public FunctionPass {
 
 public:
 
-    map <StringRef, set<const Value*> > liveInVars;
-    map <StringRef, set<const Value*> > liveOutVars;
-    map <StringRef, set<const Value*> > phiConstants;
+    map <StringRef, set <const Value*> > liveInVars;
+    map <StringRef, set <const Value*> > liveOutVars;
+    map <StringRef, set <const Value*> > phiConstants;
 
     static char ID;
 
@@ -55,7 +55,6 @@ private:
     void setCurrentFunc(Function& F);
 
 };
-
 
 
 #endif // LIVEVARSPASS_H

@@ -20,7 +20,7 @@ bool DFGraphPass::runOnFunction(Function &F) {
     for (const BasicBlock& BB : F.getBasicBlockList()) {
         StringRef BBName = BB.getName();
         varsMapping.insert(make_pair(BBName, map <const Value*, Block*>()));
-        varsMerges.insert(make_pair(&BB, map <const BasicBlock*, set <pair <Merge*, const Value*> > >()));
+        varsMerges.insert(make_pair(&BB, map <const Value*, Merge*>()));
         graph.addBasicBlock();
         processBBEntryControl(&BB);
         if (firstBB) { // Function arguments
@@ -89,9 +89,10 @@ bool DFGraphPass::runOnFunction(Function &F) {
         }
         processBBExitControl(&BB);
     }//TODO: Globals vars (allocate memory)
-    connectMerges();
+    connectMerges(F);
     connectControlMerges();
     printGraph(F);
+    clearStructures();
     return false;
 }
 
@@ -216,7 +217,7 @@ void DFGraphPass::processPhiInst(const Instruction &inst)
     Merge* merge = new Merge();
     merge->setDataOutPortWidth(resultTypeSize);
     for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
-        varsMerges[BB][phi->getIncomingBlock(i)].insert(make_pair(merge, phi->getIncomingValue(i)));
+        varsMerges[BB][phi->getIncomingValue(i)] = merge;
     }
     graph.addBlockToBB(merge);
     varsMapping[BB->getName()][&inst] = merge;
@@ -478,18 +479,11 @@ void DFGraphPass::processLiveIn(const BasicBlock* BB) {
     {
         const Value* value = *it;
         unsigned int size = DL.getTypeSizeInBits(value->getType());
-        Merge* mergeLiveIn = new Merge();
-        varsMapping[BBName][value] = mergeLiveIn;
-        mergeLiveIn->setDataOutPortWidth(size);
-        graph.addBlockToBB(mergeLiveIn);
-        for (const_pred_iterator it = pred_begin(BB); it != pred_end(BB); ++it) {
-            const BasicBlock* pred = (*it);
-            StringRef predName = pred->getName();
-            set <const Value*>& predLiveOut = liveness->liveOutVars[predName];
-            if (predLiveOut.find(value) != predLiveOut.end()) {
-                varsMerges[BB][pred].insert(make_pair(mergeLiveIn, value));
-            }
-        }
+        Merge* merge = new Merge();
+        varsMapping[BBName][value] = merge;
+        merge->setDataOutPortWidth(size);
+        graph.addBlockToBB(merge);
+        varsMerges[BB][value] = merge;
     }
 }
 
@@ -587,23 +581,44 @@ Fork* DFGraphPass::connectBlocks(Block* block, pair<Block*, const Port*> connect
 }
 
 
-void DFGraphPass::connectMerges() {
-    for (map <const BasicBlock*, map <const BasicBlock*, set <pair<Merge*, 
-        const Value*> > > >::const_iterator it = varsMerges.begin();
-        it != varsMerges.end(); ++it) 
-    {
-        const BasicBlock* BB = it->first;
-        for (map <const BasicBlock*, set <pair <Merge*, const Value* > > >::const_iterator
-            it2 = varsMerges[BB].begin(); it2 != varsMerges[BB].end(); ++it2)
+void DFGraphPass::connectMerges(const Function& F) {
+    for (Function::const_iterator it = F.begin(); it != F.end(); ++it) {
+        const BasicBlock* BB = &(*it);
+        StringRef BBName = BB->getName();
+        for (set <const Value*>::const_iterator it2 = liveness->liveInVars[BBName].begin();
+            it2 != liveness->liveInVars[BBName].end(); ++it2)
         {
-            const BasicBlock* pred = it2->first;
-            const BranchInst* branchInst = cast<BranchInst>(pred->getTerminator());
-            for (set <pair <Merge*, const Value*> >::const_iterator it3 = varsMerges[BB][pred].begin();
-                it3 != varsMerges[BB][pred].end(); ++it3)
-            {
-                Merge* merge = it3->first;
-                const Value* value = it3->second;
-                Branch* branchBlock = (Branch*)varsMapping[pred->getName()][value];
+            const Value* value = *it2;
+            Merge* merge = varsMerges[BB][value];
+            for (const_pred_iterator it3 = pred_begin(BB); it3 != pred_end(BB); ++it3) {
+                const BasicBlock* predBB = *it3;
+                const BranchInst* branchInst = cast<BranchInst>(predBB->getTerminator());
+                Branch* branchBlock = (Branch*)varsMapping[predBB->getName()][value];
+                pair <Block*, const Port*> connection = make_pair(merge, merge->addDataInPort(0));
+                if (branchInst->getSuccessor(0) == BB) {
+                    if (branchInst->isConditional()) {
+                        branchBlock->setConnectedPortFalse(connection);
+                    }
+                    else {
+                        branchBlock->setConnectedPortTrue(connection);
+                    }
+                }
+                else if (branchInst->isConditional() and branchInst->getSuccessor(1) == BB) {
+                    branchBlock->setConnectedPortTrue(connection);
+                }
+            }
+        }
+
+        for (BasicBlock::const_iterator it2 = BB->begin(); &(*it2) != BB->getFirstNonPHI(); ++it2) {
+            const PHINode* phi = cast<PHINode> (it2);
+            Value* value;
+            const BasicBlock* predBB;
+            for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
+                value = phi->getIncomingValue(i);
+                predBB = phi->getIncomingBlock(i);
+                Merge* merge = varsMerges[BB][value];
+                const BranchInst* branchInst = cast<BranchInst>(predBB->getTerminator());
+                Branch* branchBlock = (Branch*)varsMapping[predBB->getName()][value];
                 pair <Block*, const Port*> connection = make_pair(merge, merge->addDataInPort(0));
                 if (branchInst->getSuccessor(0) == BB) {
                     if (branchInst->isConditional()) {
@@ -687,6 +702,12 @@ void DFGraphPass::printGraph(Function& F) {
     file.close();
 }
 
+void DFGraphPass::clearStructures() {
+    varsMapping.clear();
+    controlBlocks.clear();
+    varsMerges.clear();
+    controlMerges.clear();
+}
 
 
 static RegisterPass<DFGraphPass> registerDFGraphPass("dfGraphPass", 

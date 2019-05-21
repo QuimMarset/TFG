@@ -18,8 +18,6 @@ class Block {
 
 public:
 
-    Block();
-    Block(const string &blockName, BlockType type, int blockDelay);
     virtual ~Block();
 
     string getBlockName();
@@ -39,6 +37,8 @@ public:
 
 protected:
 
+    Block();
+    Block(const string &blockName, BlockType type, int blockDelay);
     string blockName;
     BlockType blockType;
     int blockDelay;
@@ -49,10 +49,6 @@ protected:
 class Operator : public Block {
 
 public:
-
-    Operator(const string& blockName, int blockDelay = 0, 
-        int latency = 0, int II = 0);
-    virtual ~Operator();
 
     void setLatency(int latency);
     void setII(int II);
@@ -71,6 +67,9 @@ public:
 
 protected:
 
+    Operator(const string& blockName, int blockDelay = 0, 
+        int latency = 0, int II = 0);
+    virtual ~Operator();
     Port dataOut;
     int latency;
     int II;
@@ -268,9 +267,6 @@ void Constant<T>::printBlock(ostream &file) {
     else if (blockDelay > 0) file << ", delay = " << blockDelay;
     file << ", value = " << value;
     file << "];" << endl;
-    // file << blockName << " -> " << connectedPort.first->getBlockName() << " [from =" <<
-    //     data.getName() << ", to=" << connectedPort.second->getName() << "];"
-    //     << endl;
 }
 
 

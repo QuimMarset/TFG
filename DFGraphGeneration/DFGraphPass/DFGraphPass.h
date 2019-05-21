@@ -34,10 +34,12 @@ private:
     DFGraph graph;
     map <StringRef, map <const Value*, Block*> > varsMapping;
     map <StringRef, Block*> controlBlocks;
-    map <const BasicBlock*, map <const BasicBlock*, set <pair<Merge*, const Value*> > > > varsMerges;
+    map <const BasicBlock*, map <const Value*, Merge*> > varsMerges;
     map <const BasicBlock*, Merge*> controlMerges;
     DataLayout DL;
     LiveVarsPass* liveness;
+
+    void clearStructures();
 
     void processBinaryInst(const Instruction &inst);
     
@@ -71,7 +73,7 @@ private:
 
     Fork* connectBlocks(Block* block, pair<Block*, const Port*> connection);
 
-    void connectMerges();
+    void connectMerges(const Function& F);
     void connectControlMerges();
 
     ConstantInterf* createConstant(const Value* operand, const BasicBlock* BB);
