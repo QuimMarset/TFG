@@ -63,7 +63,7 @@ private:
     void processOperator(const Value* operand, pair <Block*, const Port*> connection,
         const BasicBlock* BB);
 
-    void processPhiConstants(const BasicBlock* BB);
+    // void processPhiConstants(const BasicBlock* BB);
 
     void processLiveIn(const BasicBlock* BB);
 
