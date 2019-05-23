@@ -24,6 +24,7 @@ public:
 
     map <StringRef, set <const Value*> > liveInVars;
     map <StringRef, set <const Value*> > liveOutVars;
+    map <StringRef, set <const Value*> > phiConstants;
 
     static char ID;
 
@@ -42,6 +43,8 @@ private:
 
     void computeUsesDefs(const BasicBlock &BB, set<const Value*> &uses, 
         set<const Value*> &defs);
+
+    void computePhiVars(const BasicBlock& BB);
 
     bool iterateBasicBlock(const BasicBlock &BB, const set<const Value*> &uses, 
         const set<const Value*> &defs, map<StringRef, set<const Value*> > &livesIn, 

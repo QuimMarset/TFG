@@ -16,13 +16,27 @@ bool DFGraphPass::runOnFunction(Function &F) {
     liveness = &getAnalysis<LiveVarsPass>();
     graph.setFunctionName(F.getName()); //TODO: Keep as pointers
     DL = DataLayout(F.getParent());
+    bool firstBB = true;
     for (const BasicBlock& BB : F.getBasicBlockList()) {
         StringRef BBName = BB.getName();
         varsMapping.insert(make_pair(BBName, map <const Value*, Block*>()));
         varsMerges.insert(make_pair(&BB, map <const Value*, Merge*>()));
         graph.addBasicBlock();
         processBBEntryControl(&BB);
-        processLiveIn(&BB);
+        if (firstBB) { // Function arguments
+            firstBB = false;
+            for (Function::const_arg_iterator arg_it = F.arg_begin(); arg_it != F.arg_end(); ++arg_it) {
+                unsigned int argTypeSize = DL.getTypeSizeInBits(arg_it->getType());
+                DFGraphComp::Argument* argBlock = new DFGraphComp::Argument(argTypeSize);
+                graph.addBlockToBB(argBlock);
+                varsMapping[BBName][arg_it] = argBlock;
+                connectOrphanBlock(make_pair(argBlock, argBlock->getControlInPort()), &BB);
+            }
+        }
+        else {
+            processLiveIn(&BB);
+        }
+        processPhiConstants(&BB);
         for (BasicBlock::const_iterator inst_it = BB.begin(); inst_it != BB.end(); 
             ++inst_it) 
         {
@@ -286,13 +300,10 @@ void DFGraphPass::processCastInst(const Instruction &inst)
     if (opCode == Instruction::Trunc) {
         castOpType = UnaryOpType::IntTrunc;
     }
-    else if (opCode == Instruction::FPTrunc) {
-        castOpType = UnaryOpType::FPointTrunc;
-    }
     else if (opCode == Instruction::ZExt) {
         castOpType = UnaryOpType::IntZExt;
     }
-    else if (opCode == Instruction::FPExt) {
+    else if (opCode == Instruction::SExt) {
         castOpType = UnaryOpType::IntSExt;
     }
     else if (opCode == Instruction::FPToUI) {
@@ -307,14 +318,20 @@ void DFGraphPass::processCastInst(const Instruction &inst)
     else if (opCode == Instruction::SIToFP) {
         castOpType = UnaryOpType::SIntToFPoint;
     }
-    else if (opCode == Instruction::IntToPtr) {
-        castOpType = UnaryOpType::IntToPtr;
+    else if (opCode == Instruction::FPTrunc) {
+        castOpType = UnaryOpType::FPointTrunc;
+    }
+    else if (opCode == Instruction::FPExt) {
+        castOpType = UnaryOpType::FPointExt;
     }
     else if (opCode == Instruction::PtrToInt) {
         castOpType = UnaryOpType::PtrToInt;
     }
+    else if (opCode == Instruction::IntToPtr) {
+        castOpType = UnaryOpType::IntToPtr;
+    }
     else if (opCode == Instruction::BitCast) { //TODO:
-        castOpType = UnaryOpType::TypeCast;
+        castOpType = UnaryOpType::BitCast;
     }
     else if (opCode == Instruction::AddrSpaceCast) {
         castOpType = UnaryOpType::AddrSpaceCast;
@@ -369,8 +386,9 @@ void DFGraphPass::processBranchInst(const Instruction &inst)
     const BasicBlock* BB = inst.getParent();
     StringRef BBName = BB->getName();
     const BranchInst* branchInst = cast<BranchInst>(&inst);
-    const set<const Value*>& BBLiveOut = liveness->liveOutVars[BBName];
-    unsigned int numBranch = BBLiveOut.size();
+    const set <const Value*>& BBLiveOut = liveness->liveOutVars[BBName];
+    const set <const Value*>& BBPhiConstants = liveness->phiConstants[BBName];
+    unsigned int numBranch = BBLiveOut.size() + BBPhiConstants.size();
     Value* condition = nullptr;
     Block* conditionTrue = nullptr;
     if (branchInst->isConditional()) {
@@ -389,6 +407,26 @@ void DFGraphPass::processBranchInst(const Instruction &inst)
         else conditionTrue = cstTrue;
     }
     for (set<const Value*>::const_iterator it = BBLiveOut.begin(); it != BBLiveOut.end(); ++it) {
+        const Value* value = *it;
+        Block* blockVar = varsMapping[BBName][value];
+        Branch* branchBlock = new Branch();
+        pair <Block*, const Port*> connectionCond = make_pair(branchBlock, 
+            branchBlock->getConditionInPort());
+        if (condition) {
+            processOperator(condition, connectionCond, BB);
+        }
+        else { 
+            conditionTrue->setConnectedPort(connectionCond);
+        }
+        Fork* fork = connectBlocks(blockVar, make_pair(branchBlock, 
+            branchBlock->getDataInPort()));
+        if (fork != nullptr) graph.addBlockToBB(fork);
+        varsMapping[BBName][value] = branchBlock;
+        graph.addBlockToBB(branchBlock);
+    }
+    for(set<const Value*>::const_iterator it = BBPhiConstants.begin(); it != BBPhiConstants.end(); 
+        ++it)
+    {
         const Value* value = *it;
         Block* blockVar = varsMapping[BBName][value];
         Branch* branchBlock = new Branch();
@@ -440,30 +478,32 @@ void DFGraphPass::processLiveIn(const BasicBlock* BB) {
     set <const Value*> liveIn = liveness->liveInVars[BBName];
     const Value* value;
     unsigned int width;
-    Block* block;
     for (set <const Value*>::const_iterator it = liveIn.begin(); it != liveIn.end(); ++it)
     {
         value = *it;
         width = DL.getTypeSizeInBits(value->getType());
-        if (isa<llvm::Constant>(value)) {
-            ConstantInterf* cst = createConstant(value, BB);
-            block = cst;
-        }
-        else if (isa<llvm::Argument>(value) and pred_empty(BB)) {
-            DFGraphComp::Argument* arg = new DFGraphComp::Argument(width);
-            connectOrphanBlock(make_pair(arg, arg->getControlInPort()), BB);
-            block = arg;
-        }
-        else { // Instruction or Argument out of the first BB
-            Merge* merge = new Merge();
-            merge->setDataOutPortWidth(width);
-            varsMerges[BB][value] = merge;
-            block = merge;
-        }
-        varsMapping[BBName][value] = block;
-        graph.addBlockToBB(block);
+        Merge* merge = new Merge();
+        varsMapping[BBName][value] = merge;
+        merge->setDataOutPortWidth(width);
+        graph.addBlockToBB(merge);
+        varsMerges[BB][value] = merge;
     }
 }
+
+
+void DFGraphPass::processPhiConstants(const BasicBlock* BB) {
+    StringRef BBName = BB->getName();
+    const Value* value;
+    for (set <const Value*>::const_iterator it = liveness->phiConstants[BBName].begin();
+        it != liveness->phiConstants[BBName].end(); ++it)
+    {
+        value = *it;
+        ConstantInterf* cst = createConstant(value, BB);
+        varsMapping[BBName][value] = cst;
+        graph.addBlockToBB(cst);
+    }
+}
+
 
 void DFGraphPass::processBBEntryControl(const BasicBlock* BB) 
 {
@@ -651,7 +691,6 @@ void DFGraphPass::printGraph(Function& F) {
     file.open(liveness->getInputFileName() + "_" + 
         graph.getFunctionName() + ".dot");
     graph.printGraph(file);
-    graph.freeGraph();
     file.close();
 }
 
@@ -660,6 +699,7 @@ void DFGraphPass::clearStructures() {
     controlBlocks.clear();
     varsMerges.clear();
     controlMerges.clear();
+    graph.freeGraph();
 }
 
 

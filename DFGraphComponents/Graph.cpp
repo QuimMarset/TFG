@@ -134,6 +134,20 @@ void DFGraph::freeGraph() {
         basicBlocks[i].freeBB();
     }
     basicBlocks.clear();
+    UnaryOperator::resetCounter();
+    BinaryOperator::resetCounter();
+    Buffer::resetCounter();
+    ConstantInterf::resetCounter();
+    Fork::resetCounter();
+    Merge::resetCounter();
+    Select::resetCounter();
+    Branch::resetCounter();
+    Demux::resetCounter();
+    Entry::resetCounter();
+    Argument::resetCounter();
+    Exit::resetCounter();
+    Return::resetCounter();
+    Store::resetCounter();
 }
 
 void DFGraph::printGraph(ostream &file) {

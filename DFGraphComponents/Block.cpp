@@ -113,6 +113,7 @@ UnaryOperator::UnaryOperator(UnaryOpType opType, int blockDelay,
     to_string(instanceCounter[opType]), blockDelay, latency, II),
     dataIn("in")
 {
+    this->opType = opType;
     ++instanceCounter[opType];
 }
 

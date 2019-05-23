@@ -59,7 +59,7 @@ ostream &operator << (ostream &out, BlockType blockType) {
  * =================================
 */
 
-int numberUnary = 13;
+int numberUnary = 15;
 int numberBinary = 30;
 
 string getUnaryOpName(UnaryOpType op) {
@@ -73,9 +73,6 @@ string getUnaryOpName(UnaryOpType op) {
         break;
     case IntTrunc:
         return "IntTrunc";
-        break;
-    case FPointTrunc:
-        return "FPointTrunc";
         break;
     case IntZExt:
         return "IntZExt";
@@ -95,14 +92,20 @@ string getUnaryOpName(UnaryOpType op) {
     case SIntToFPoint:
         return "SIntToFPoint";
         break;
-    case IntToPtr:
-        return "IntToPtr";
+    case FPointTrunc:
+        return "FPointTrunc";
+        break;
+    case FPointExt:
+        return "FPointExt";
         break;
     case PtrToInt:
         return "PtrToInt";
         break;
-    case TypeCast:
-        return "TypeCast";
+    case IntToPtr:
+        return "IntToPtr";
+        break;
+    case BitCast:
+        return "BitCast";
         break;
     case AddrSpaceCast:
         return "AddrSpaceCast";
@@ -222,40 +225,43 @@ ostream &operator << (ostream& out, UnaryOpType op) {
             out << "load";
             break;
         case IntTrunc:
-            out << "intTrunc";
-            break;
-        case FPointTrunc:
-            out << "fPointTrunc";
+            out << "inttrunc";
             break;
         case IntZExt:
-            out << "intZExt";
+            out << "intzext";
             break;
         case IntSExt:
-            out << "intSExt";
+            out << "intsext";
             break;
         case FPointToUInt:
-            out << "fPointToUInt";
+            out << "fpointtouint";
             break;
         case FPointToSInt:
-            out << "fPointToSInt";
+            out << "fpointtosint";
             break;
         case UIntToFPoint:
-            out << "uIntToFPoint";
+            out << "uinttofpoint";
             break;
         case SIntToFPoint:
-            out << "sIntToFPoint";
+            out << "sinttofpoint";
             break;
-        case IntToPtr:
-            out << "intToPtr";
+        case FPointTrunc:
+            out << "fpointtrunc";
+            break;
+        case FPointExt:
+            out << "fpointext";
             break;
         case PtrToInt:
-            out << "ptrToInt";
+            out << "ptrtoint";
             break;
-        case TypeCast:
-            out << "typeCast";
+        case IntToPtr:
+            out << "inttoptr";
+            break;
+        case BitCast:
+            out << "bitcast";
             break;
         case AddrSpaceCast:
-            out << "addrSpaceCast";
+            out << "addrspacecast";
             break;
         default:
             break;

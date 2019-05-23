@@ -29,6 +29,7 @@ bool LiveVarsPass::runOnFunction(Function &F) {
     else { // Reset maps for other functions in the LLVM files
         liveInVars.clear(); 
         liveOutVars.clear();
+        phiConstants.clear();
     }
     setCurrentFunc(F);
     map <StringRef, set<const Value*> > uses;
@@ -39,6 +40,9 @@ bool LiveVarsPass::runOnFunction(Function &F) {
         uses.insert(make_pair(BBName, set<const Value*>()));
         defs.insert(make_pair(BBName, set<const Value*>()));
         computeUsesDefs(*bb_it, uses[BBName], defs[BBName]);
+        if (&(*(bb_it->begin())) != bb_it->getFirstNonPHI()) {
+            computePhiVars(*bb_it);
+        }
     }
     bool changes;
     Function::BasicBlockListType &blocks = F.getBasicBlockList();
@@ -81,6 +85,30 @@ void LiveVarsPass::computeUsesDefs(const BasicBlock& BB, set<const Value*>& uses
     }    
 }
 
+void LiveVarsPass::computePhiVars(const BasicBlock& BB) {
+    StringRef predBBName;
+    for (BasicBlock::const_iterator it = BB.begin(); &(*it) != BB.getFirstNonPHI(); ++it) {
+        const PHINode* phi = cast<PHINode> (it);
+        const Value* value;
+        for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
+            value = phi->getIncomingValue(i);
+            predBBName = phi->getIncomingBlock(i)->getName();
+            if (isa<Instruction>(value) || isa<Argument>(value)) {
+                liveOutVars[predBBName].insert(value);
+            }
+            else if (isa<Constant>(value)) {
+                phiConstants[predBBName].insert(value);
+                // if (liveOutVars[predBBName].find(value) == liveOutVars[predBBName].end()) {
+                //     phiConstants[predBBName][value] = 1;
+                // }
+                // else {
+                //     phiConstants[predBBName][value] = phiConstants[predBBName][value] + 1;
+                // }
+            }
+        }
+    }
+}
+
 
 bool LiveVarsPass::iterateBasicBlock(const BasicBlock &BB, const set<const Value*> &uses, 
     const set<const Value*> &defs, map<StringRef, set<const Value*> > &livesIn, 
@@ -101,30 +129,9 @@ bool LiveVarsPass::iterateBasicBlock(const BasicBlock &BB, const set<const Value
         changes = changes | livesIn[BBName].insert(*it).second;
     }
     StringRef predBBName;
-    if (&(*BB.begin()) != BB.getFirstNonPHI()) {
-        for (BasicBlock::const_iterator it = BB.begin(); &(*it) != BB.getFirstNonPHI(); ++it) {
-            const PHINode* phi = cast<PHINode> (it);
-            Value* value;
-            for (unsigned int i = 0; i < phi->getNumIncomingValues(); ++i) {
-                value = phi->getIncomingValue(i);
-                predBBName = phi->getIncomingBlock(i)->getName();
-                if (isa<Instruction>(value) || isa<Argument>(value) || isa<Constant>(value)) {
-                    livesOut[predBBName].insert(value);
-                }
-            }
-        }
-    }   
-    const Value* value;
     for (const_pred_iterator it = pred_begin(&BB); it != pred_end(&BB); ++it) {
         predBBName = (*it)->getName();
-        for (set <const Value*>::const_iterator it2 = newLivesIn.begin(); it2 != newLivesIn.end();
-            ++it2)
-        {   
-            value = *it2;
-            if (isa<Instruction>(value) || isa<Argument>(value)) {
-                livesOut[predBBName].insert(value);
-            }
-        }
+        livesOut[predBBName].insert(newLivesIn.begin(), newLivesIn.end());
     }
     return changes;
 }
@@ -134,7 +141,6 @@ void LiveVarsPass::printLiveVarsAnalysis(Function& F) {
     ofstream file;
     file.open(inputFileName + "_" + F.getName().str() + "_LVA.txt");
     StringRef BBName;
-    const Value* value;
     for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
         BBName = bb_it->getName();
         file << "Block " << BBName.str() << '\n';
@@ -142,19 +148,13 @@ void LiveVarsPass::printLiveVarsAnalysis(Function& F) {
         for (set<const Value*>::const_iterator var_it = liveInVars[BBName].begin(); 
             var_it != liveInVars[BBName].end(); ++var_it) 
         {
-            value = *var_it;
-            if (isa<Instruction>(value) || isa<Argument>(value)) {
-                file << value->getName().str() << endl;
-            }
+            file << (*var_it)->getName().str() << '\n';
         }
         file << "Live Out\n";
         for (set<const Value*>::const_iterator var_it = liveOutVars[BBName].begin(); 
             var_it != liveOutVars[BBName].end(); ++var_it) 
         {
-            value = *var_it;
-            if (isa<Instruction>(value) || isa<Argument>(value)) {
-                file << value->getName().str() << endl;
-            }
+            file << (*var_it)->getName().str() << '\n';
         }
     }
     file.close();
@@ -174,6 +174,7 @@ void LiveVarsPass::setCurrentFunc(Function& F) {
     for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
         liveInVars.insert(make_pair(bb_it->getName(), set<const Value*>()));
         liveOutVars.insert(make_pair(bb_it->getName(), set<const Value*>()));
+        phiConstants.insert(make_pair(bb_it->getName(), set <const Value*>()));
     }
 }
 

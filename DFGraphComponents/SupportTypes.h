@@ -30,16 +30,17 @@ enum UnaryOpType {
     Not = 0,
     Load,
     IntTrunc,
-    FPointTrunc,
     IntZExt,
     IntSExt,
     FPointToUInt,
     FPointToSInt,
     UIntToFPoint,
     SIntToFPoint,
-    IntToPtr,
+    FPointTrunc,
+    FPointExt,
     PtrToInt,
-    TypeCast,
+    IntToPtr,
+    BitCast,
     AddrSpaceCast
 };
 
