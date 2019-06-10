@@ -85,6 +85,7 @@ void LiveVarsPass::computeUsesDefs(const BasicBlock& BB, set<const Value*>& uses
     }    
 }
 
+
 void LiveVarsPass::computePhiVars(const BasicBlock& BB) {
     StringRef predBBName;
     for (BasicBlock::const_iterator it = BB.begin(); &(*it) != BB.getFirstNonPHI(); ++it) {
@@ -98,12 +99,6 @@ void LiveVarsPass::computePhiVars(const BasicBlock& BB) {
             }
             else if (isa<Constant>(value)) {
                 phiConstants[predBBName].insert(value);
-                // if (liveOutVars[predBBName].find(value) == liveOutVars[predBBName].end()) {
-                //     phiConstants[predBBName][value] = 1;
-                // }
-                // else {
-                //     phiConstants[predBBName][value] = phiConstants[predBBName][value] + 1;
-                // }
             }
         }
     }
@@ -174,7 +169,7 @@ void LiveVarsPass::setCurrentFunc(Function& F) {
     for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
         liveInVars.insert(make_pair(bb_it->getName(), set<const Value*>()));
         liveOutVars.insert(make_pair(bb_it->getName(), set<const Value*>()));
-        phiConstants.insert(make_pair(bb_it->getName(), set <const Value*>()));
+        phiConstants.insert(make_pair(bb_it->getName(), set<const Value*>()));
     }
 }
 

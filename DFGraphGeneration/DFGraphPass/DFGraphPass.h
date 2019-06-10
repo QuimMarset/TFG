@@ -17,7 +17,7 @@ using namespace llvm;
 using namespace DFGraphComp;
 
 
-class DFGraphPass : public FunctionPass {
+class DFGraphPass : public ModulePass {
 
 public:
 
@@ -27,17 +27,24 @@ public:
     ~DFGraphPass();
 
     void getAnalysisUsage(AnalysisUsage &AU) const override;
-    bool runOnFunction(Function &F) override;
+    bool runOnModule(Module &M) override;
 
 private:
 
-    DFGraph graph;
+    DataLayout DL;
+    ofstream file;
+    map <StringRef, FunctionGraph> graphs;
+    int BBNumber;
+
+    LiveVarsPass* liveness;
+    FunctionGraph* graph;
     map <StringRef, map <const Value*, Block*> > varsMapping;
     map <StringRef, Block*> controlBlocks;
     map <const BasicBlock*, map <const Value*, Merge*> > varsMerges;
     map <const BasicBlock*, Merge*> controlMerges;
-    DataLayout DL;
-    LiveVarsPass* liveness;
+    DFGraphComp::Operator* controlSynch;
+
+    void processFunction(Function& F);
 
     void clearStructures();
 
@@ -59,28 +66,34 @@ private:
 
     void processBranchInst(const Instruction &inst);
 
+    void processCallInst(const Instruction& inst);
 
     void processOperator(const Value* operand, pair <Block*, const Port*> connection,
         const BasicBlock* BB);
 
+    void processLiveIn(const BasicBlock* BB);
     void processPhiConstants(const BasicBlock* BB);
 
-    void processLiveIn(const BasicBlock* BB);
-
     void processBBEntryControl(const BasicBlock* BB); 
-    void connectOrphanBlock(pair <Block*, const Port*> connection, const BasicBlock* BB);
+    void connectOrphanBlock(pair <Block*, const Port*> connection);
     void processBBExitControl(const BasicBlock* BB);
 
-    Fork* connectBlocks(Block* block, pair<Block*, const Port*> connection);
+    void connectBlocks(Block* block, pair<Block*, const Port*> connection,
+        const Value* value = nullptr);
 
-    void connectMerge(Merge* merge, Branch* branch, 
-        const BasicBlock* BB, const BasicBlock* predBB);
-    void connectMerges(const Function& F);
+
+    void connectMerge(Merge* merge, Block* block,
+        const BasicBlock* predBB, const Value* value = nullptr);
+    void connectMerges();
     void connectControlMerges();
+
+
+    void connectFunctionCall(Function& F);
+
 
     ConstantInterf* createConstant(const Value* operand, const BasicBlock* BB);
 
-    void printGraph(Function& F);
+    void printGraph(Module& M);
 
 };
 

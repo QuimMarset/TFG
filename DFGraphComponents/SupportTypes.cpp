@@ -59,64 +59,9 @@ ostream &operator << (ostream &out, BlockType blockType) {
  * =================================
 */
 
-int numberUnary = 15;
-int numberBinary = 30;
+int numberOperators = 47;
 
-string getUnaryOpName(UnaryOpType op) {
-    switch (op)
-    {
-    case Not:
-        return "Not";
-        break;
-    case Load:
-        return "Load";
-        break;
-    case IntTrunc:
-        return "IntTrunc";
-        break;
-    case IntZExt:
-        return "IntZExt";
-        break;
-    case IntSExt:
-        return "IntSExt";
-        break;
-    case FPointToUInt:
-        return "FPointToUInt";
-        break;
-    case FPointToSInt:
-        return "FPointToSInt";
-        break;
-    case UIntToFPoint:
-        return "UIntToFPoint";
-        break;
-    case SIntToFPoint:
-        return "SIntToFPoint";
-        break;
-    case FPointTrunc:
-        return "FPointTrunc";
-        break;
-    case FPointExt:
-        return "FPointExt";
-        break;
-    case PtrToInt:
-        return "PtrToInt";
-        break;
-    case IntToPtr:
-        return "IntToPtr";
-        break;
-    case BitCast:
-        return "BitCast";
-        break;
-    case AddrSpaceCast:
-        return "AddrSpaceCast";
-        break;
-    default:
-        break;
-    }
-    return "";
-}
-
-string getBinaryOpName(BinaryOpType op) {
+string getOpName(OpType op) {
     switch (op)
     {
         case Add:
@@ -206,8 +151,59 @@ string getBinaryOpName(BinaryOpType op) {
         case False:
             return "False";
             break;
-        case Alloca: 
+        case Store:
+            return "Store";
+            break;
+        case Load:
+            return "Load";
+            break;
+        case Alloca:
             return "Alloca";
+            break;
+        case Not:
+            return "Not";
+            break;
+        case IntTrunc:
+            return "IntTrunc";
+            break;
+        case IntZExt:
+            return "IntZExt";
+            break;
+        case IntSExt:
+            return "IntSExt";
+            break;
+        case FPointToUInt:
+            return "FPointToUInt";
+            break;
+        case FPointToSInt:
+            return "FPointToSInt";
+            break;
+        case UIntToFPoint:
+            return "UIntToFPoint";
+            break;
+        case SIntToFPoint:
+            return "SIntToFPoint";
+            break;
+        case FPointTrunc:
+            return "FPointTrunc";
+            break;
+        case FPointExt:
+            return "FPointExt";
+            break;
+        case PtrToInt:
+            return "PtrToInt";
+            break;
+        case IntToPtr:
+            return "IntToPtr";
+            break;
+        case BitCast:
+            return "BitCast";
+            break;
+        case AddrSpaceCast:
+            return "AddrSpaceCast";
+            break;
+        case Synchronization:
+            return "Synchronization";
             break;
         default:
             break;
@@ -215,61 +211,19 @@ string getBinaryOpName(BinaryOpType op) {
     return "";
 }
 
-ostream &operator << (ostream& out, UnaryOpType op) {
-    switch (op)
-    {
-        case Not:
-            out << "not";
-            break;
-        case Load:
-            out << "load";
-            break;
-        case IntTrunc:
-            out << "inttrunc";
-            break;
-        case IntZExt:
-            out << "intzext";
-            break;
-        case IntSExt:
-            out << "intsext";
-            break;
-        case FPointToUInt:
-            out << "fpointtouint";
-            break;
-        case FPointToSInt:
-            out << "fpointtosint";
-            break;
-        case UIntToFPoint:
-            out << "uinttofpoint";
-            break;
-        case SIntToFPoint:
-            out << "sinttofpoint";
-            break;
-        case FPointTrunc:
-            out << "fpointtrunc";
-            break;
-        case FPointExt:
-            out << "fpointext";
-            break;
-        case PtrToInt:
-            out << "ptrtoint";
-            break;
-        case IntToPtr:
-            out << "inttoptr";
-            break;
-        case BitCast:
-            out << "bitcast";
-            break;
-        case AddrSpaceCast:
-            out << "addrspacecast";
-            break;
-        default:
-            break;
-    }
-    return out;
+
+bool isUnary(OpType op) {
+    return (op >= OpType::Load and op < OpType::Synchronization);
 }
 
-ostream &operator << (ostream& out, BinaryOpType op) {
+
+bool isBinary(OpType op) {
+    return (op >= OpType::Add and op < OpType::Load);
+}
+
+
+
+ostream &operator << (ostream& out, OpType op) {
     switch (op)
     {
         case Add:
@@ -358,9 +312,60 @@ ostream &operator << (ostream& out, BinaryOpType op) {
             break;
         case False:
             out << "false";
+            break;        
+        case Store:
+            out << "store";
+            break;
+        case Load:
+            out << "load";
             break;
         case Alloca:
             out << "alloca";
+            break;
+        case Not:
+            out << "not";
+            break;
+        case IntTrunc:
+            out << "inttrunc";
+            break;
+        case IntZExt:
+            out << "intzext";
+            break;
+        case IntSExt:
+            out << "intsext";
+            break;
+        case FPointToUInt:
+            out << "fpointtouint";
+            break;
+        case FPointToSInt:
+            out << "fpointtosint";
+            break;
+        case UIntToFPoint:
+            out << "uinttofpoint";
+            break;
+        case SIntToFPoint:
+            out << "sinttofpoint";
+            break;
+        case FPointTrunc:
+            out << "fpointtrunc";
+            break;
+        case FPointExt:
+            out << "fpointext";
+            break;
+        case PtrToInt:
+            out << "ptrtoint";
+            break;
+        case IntToPtr:
+            out << "inttoptr";
+            break;
+        case BitCast:
+            out << "bitcast";
+            break;
+        case AddrSpaceCast:
+            out << "addrspacecast";
+            break;
+        case Synchronization:
+            out << "synchronization";
             break;
         default:
             break;
@@ -376,13 +381,11 @@ ostream &operator << (ostream& out, BinaryOpType op) {
 */
 
 
-Port::Port() {
-    name = "";
-    type = Base;
-    width = 0;
-}
+Port::Port() {}
 
-Port::Port(const string &name, Port::PortType type, int width, int delay) {
+Port::Port(const string &name, int width, Port::PortType type, 
+    unsigned int delay) {
+    assert(width >= -1);
     this->name = name;
     this->type = type;
     this->width = width;
@@ -391,17 +394,12 @@ Port::Port(const string &name, Port::PortType type, int width, int delay) {
 
 Port::Port(const Port &port) {
     name = port.name;
-    type = port.type;
     width = port.width;
+    type = port.type;
     delay = port.delay;
 }
 
-Port::~Port() {
-    name = "";
-    type = Base;
-    width = 0;
-    delay = 0;
-}
+Port::~Port() {}
 
 string Port::getName() const {
     return name;
@@ -427,11 +425,11 @@ void Port::setType(Port::PortType type) {
     this->type = type;
 }
 
-void Port::setWidth(int width) {
+void Port::setWidth(unsigned int width) {
     this->width = width;
 }
 
-void Port::setDelay(int delay) {
+void Port::setDelay(unsigned int delay) {
     this->delay = delay;
 }
 

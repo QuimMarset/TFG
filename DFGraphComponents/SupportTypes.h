@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <assert.h>
 using namespace std;
 
 
@@ -20,31 +21,16 @@ enum BlockType {
     Branch_Block,
     Demux_Block,
     Entry_Block,
-    Exit_Block
+    Exit_Block,
+    FunctionCall_Block // Dummy block
 };
 
 ostream &operator << (ostream &out, BlockType blockType);
 
 
-enum UnaryOpType {
-    Not = 0,
-    Load,
-    IntTrunc,
-    IntZExt,
-    IntSExt,
-    FPointToUInt,
-    FPointToSInt,
-    UIntToFPoint,
-    SIntToFPoint,
-    FPointTrunc,
-    FPointExt,
-    PtrToInt,
-    IntToPtr,
-    BitCast,
-    AddrSpaceCast
-};
 
-enum BinaryOpType {
+enum OpType {
+    // Binary
     Add = 0,
     FAdd,
     Sub,
@@ -74,19 +60,38 @@ enum BinaryOpType {
     FLE,
     True,
     False,
-    Alloca
+    Store,
+
+    // Unary
+    Load,
+    Alloca,
+    Not,
+    IntTrunc,
+    IntZExt,
+    IntSExt,
+    FPointToUInt,
+    FPointToSInt,
+    UIntToFPoint,
+    SIntToFPoint,
+    FPointTrunc,
+    FPointExt,
+    PtrToInt,
+    IntToPtr,
+    BitCast,
+    AddrSpaceCast,
+
+    // More than two inputs
+    Synchronization
 };
 
+extern int numberOperators;
 
+string getOpName(OpType op);
 
-extern int numberUnary;
-extern int numberBinary;
+bool isUnary(OpType op);
+bool isBinary(OpType op);
 
-string getUnaryOpName(UnaryOpType op);
-string getBinaryOpName(BinaryOpType op);
-
-ostream &operator << (ostream& out, UnaryOpType op);
-ostream &operator << (ostream& out, BinaryOpType op);
+ostream &operator << (ostream& out, OpType op);
 
 
 
@@ -102,7 +107,8 @@ public:
     };
 
     Port();
-    Port(const string &name, PortType type = Base, int width = -1, int delay = 0);
+    Port(const string &name, int width = -1, PortType type = Base,  
+        unsigned int delay = 0);
     Port(const Port &port);
     ~Port();
 
@@ -112,8 +118,8 @@ public:
     int getDelay() const;
     void setName(string name);
     void setType(PortType type);
-    void setWidth(int width);
-    void setDelay(int delay);
+    void setWidth(unsigned int width);
+    void setDelay(unsigned int delay);
     
     friend ostream &operator << (ostream &out, const Port &p); 
 
@@ -122,7 +128,7 @@ private:
     string name;
     PortType type;
     int width;
-    int delay;
+    unsigned int delay;
 
 };
 
