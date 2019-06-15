@@ -58,7 +58,7 @@ Operator::Operator(OpType opType, const BasicBlock* parentBB,
     unsigned int II) : 
     Block(getOpName(opType) + to_string(instanceCounter[opType]), 
     parentBB, BlockType::Operator_Block, blockDelay), 
-    dataOut("out", portWidth), connectedPort(nullptr, nullptr)
+    dataOut("out", portWidth), connectedPort(nullptr, -1)
 {
     this->latency = latency;
     this->II = II;
@@ -79,11 +79,11 @@ OpType Operator::getOpType() {
     return opType;
 }
 
-const Port* Operator::addInputPort(int portWidth, unsigned int portDelay) {
+unsigned int Operator::addInputPort(int portWidth, unsigned int portDelay) {
     assert(!isUnary(opType) and !isBinary(opType));
     dataIn.push_back(Port("in" + to_string(dataIn.size()), portWidth, 
         Port::Base, portDelay));
-    return &dataIn.back();
+    return dataIn.size()-1;
 }
 
 void Operator::setLatency(unsigned int latency) {
@@ -118,23 +118,30 @@ void Operator::setDataInPortDelay(unsigned int index, unsigned int delay) {
 void Operator::setDataOutPortDelay(unsigned int delay) {
     dataOut.setDelay(delay);
 }
-
-const Port* Operator::getDataInPort(unsigned int index) {
+const Port& Operator::getDataInPort(unsigned int index) {
     assert(index < dataIn.size());
-    return &dataIn[index];
+    return dataIn[index];
 }
 
-pair <Block*, const Port*> Operator::getConnectedPort() {
+pair <Block*, int> Operator::getConnectedPort() {
     return connectedPort;
 }
 
-void Operator::setConnectedPort(pair <Block*, const Port*> connection) {
+void Operator::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool Operator::connectionAvailable()  {
     return (connectedPort.first == nullptr and
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
+}
+
+unsigned int Operator::getConnectedPortIndex() {
+    return 0;
+}
+
+const Port& Operator::getInputPort(unsigned int index) {
+    return dataIn[index];
 }
 
 void Operator::printBlock(ostream& file) {
@@ -183,10 +190,10 @@ void Operator::printBlock(ostream& file) {
 
 void Operator::printChannels(ostream& file) {
     assert(opType != OpType::Store and connectedPort.first != nullptr and 
-        connectedPort.second != nullptr);
+        connectedPort.second != -1);
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        dataOut.getName() << ", to = " << connectedPort.second->getName() << "];"
-        << endl;
+        dataOut.getName() << ", to = " << 
+        connectedPort.first->getInputPort(connectedPort.second).getName() << "];" << endl;
 }
 
 
@@ -204,7 +211,7 @@ Buffer::Buffer(const BasicBlock* parentBB, unsigned int slots, bool transparent,
     Block("Buffer" + to_string(instanceCounter), 
     parentBB, BlockType::Buffer_Block, blockDelay), 
     dataIn("in", portWidth), dataOut("out", portWidth), 
-    connectedPort(nullptr, nullptr)
+    connectedPort(nullptr, -1)
 {
     ++instanceCounter;
     this->slots = slots;
@@ -242,21 +249,29 @@ void Buffer::setDataOutPortDelay(unsigned int delay) {
     dataOut.setDelay(delay);
 }
 
-pair <Block*, const Port*> Buffer::getConnectedPort() {
+pair <Block*, int> Buffer::getConnectedPort() {
     return connectedPort;
 }
 
-void Buffer::setConnectedPort(pair <Block*, const Port*> connection) {
+void Buffer::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool Buffer::connectionAvailable() {
     return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
 }
 
-const Port* Buffer::getDataInPort() {
-    return &dataIn;
+unsigned int Buffer::getConnectedPortIndex() {
+    return 0;
+}
+
+const Port& Buffer::getInputPort(unsigned int index) {
+    return dataIn;
+}
+
+const Port& Buffer::getDataInPort() {
+    return dataIn;
 }
 
 void Buffer::printBlock(ostream &file) {
@@ -290,9 +305,10 @@ void Buffer::printBlock(ostream &file) {
 }
 
 void Buffer::printChannels(ostream& file) {
-    assert(connectedPort.first != nullptr and connectedPort.second != nullptr);
+    assert(connectedPort.first != nullptr and connectedPort.second != -1);
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        dataOut.getName() << ", to = " << connectedPort.second->getName() << "];"
+        dataOut.getName() << ", to = " << 
+        connectedPort.first->getInputPort(connectedPort.second).getName() << "];"
         << endl;
 }
 
@@ -311,7 +327,7 @@ ConstantInterf::ConstantInterf(const BasicBlock* parentBB, int portWidth,
     unsigned int blockDelay) : 
     Block("Constant" + to_string(instanceCounter), parentBB,
     BlockType::Constant_Block, blockDelay), control("control", 0), 
-    data("out", portWidth), connectedPort(nullptr, nullptr) 
+    data("out", portWidth), connectedPort(nullptr, -1) 
 {
     ++instanceCounter;
 }
@@ -330,28 +346,36 @@ void ConstantInterf::setDataPortDelay(unsigned int delay) {
     data.setDelay(delay);
 }
 
-pair <Block*, const Port*> ConstantInterf::getConnectedPort() {
+pair <Block*, int> ConstantInterf::getConnectedPort() {
     return connectedPort;
 }
 
-void ConstantInterf::setConnectedPort(pair <Block*, const Port*> connection) {
+void ConstantInterf::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool ConstantInterf::connectionAvailable() {
     return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
 }
 
-const Port* ConstantInterf::getControlInPort() {
-    return &control;
+unsigned int ConstantInterf::getConnectedPortIndex() {
+    return 0;
+}
+
+const Port& ConstantInterf::getInputPort(unsigned int index) {
+    return control;
+}
+
+const Port& ConstantInterf::getControlInPort() {
+    return control;
 }
 
 void ConstantInterf::printChannels(ostream& file) {
-    assert(connectedPort.first != nullptr and connectedPort.second != nullptr);
+    assert(connectedPort.first != nullptr and connectedPort.second != -1);
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        data.getName() << ", to = " << connectedPort.second->getName() << "];"
-        << endl;
+        data.getName() << ", to = " << connectedPort.first->getInputPort(connectedPort.second).getName() 
+        << "];" << endl;
 }
 
 
@@ -399,12 +423,12 @@ void Fork::setDataOutPortDelay(unsigned int index, unsigned int delay) {
     dataOut[index].setDelay(delay);
 }
 
-pair <Block*, const Port*> Fork::getConnectedPort() {
+pair <Block*, int> Fork::getConnectedPort() {
     assert(0);
-    return make_pair(nullptr, nullptr);
+    return make_pair(nullptr, -1);
 }
 
-void Fork::setConnectedPort(pair <Block*, const Port*> connection) {
+void Fork::setConnectedPort(pair <Block*, int> connection) {
     int width = dataIn.getWidth();
     int delay = dataIn.getDelay();
     dataOut.push_back(Port("out" + to_string(dataOut.size()),
@@ -416,8 +440,21 @@ bool Fork::connectionAvailable() {
     return true;    
 }
 
-const Port* Fork::getDataInPort() {
-    return &dataIn;
+unsigned int Fork::getConnectedPortIndex() {
+    return connectedPorts.size()-1;
+}
+
+void Fork::setOutPort(unsigned int index, pair <Block*, int> connection) {
+    assert(index < connectedPorts.size());
+    connectedPorts[index] = connection;
+}
+
+const Port& Fork::getInputPort(unsigned int index) {
+    return dataIn;
+}
+
+const Port& Fork::getDataInPort() {
+    return dataIn;
 }
 
 void Fork::printBlock(ostream& file ) {
@@ -462,9 +499,10 @@ void Fork::printBlock(ostream& file ) {
 
 void Fork::printChannels(ostream& file) {
     for (unsigned int i = 0; i < dataOut.size(); ++i) {
-        assert(connectedPorts[i].first != nullptr and connectedPorts[i].second != nullptr);
+        assert(connectedPorts[i].first != nullptr and connectedPorts[i].second != -1);
         file << blockName << " -> " << connectedPorts[i].first->getBlockName() << " [from = " <<
-            dataOut[i].getName() << ", to = " << connectedPorts[i].second->getName() << "];"
+            dataOut[i].getName() << ", to = " << 
+            connectedPorts[i].first->getInputPort(connectedPorts[i].second).getName() << "];"
             << endl;
     }
 }
@@ -483,18 +521,18 @@ Merge::Merge(const BasicBlock* parentBB, int portWidth,
     unsigned int blockDelay) : 
     Block("Merge" + to_string(instanceCounter), parentBB,
     BlockType::Merge_Block, blockDelay), dataOut("out", portWidth),
-    connectedPort(nullptr, nullptr)
+    connectedPort(nullptr, -1)
 {
     ++instanceCounter;
 }
 
 Merge::~Merge() {}
 
-const Port* Merge::addDataInPort(unsigned int delay) {
+unsigned int Merge::addDataInPort(unsigned int delay) {
     int width = dataOut.getWidth();
     dataIn.push_back(Port("in" + to_string(dataIn.size()), width,
         Port::Base, delay));
-    return &dataIn.back();
+    return dataIn.size()-1;
 }
 
 void Merge::setDataInPortWidth(unsigned int index, int width) {
@@ -522,22 +560,30 @@ void Merge::setDataOutPortDelay(unsigned int delay) {
     dataOut.setDelay(delay);
 }
 
-pair <Block*, const Port*> Merge::getConnectedPort() {
+pair <Block*, int> Merge::getConnectedPort() {
     return connectedPort;
 }
 
-void Merge::setConnectedPort(pair <Block*, const Port*> connection) {
+void Merge::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool Merge::connectionAvailable() {
     return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
 }
 
-const Port* Merge::getDataInPort(unsigned int index) {
-    assert(index >= 0 and index < dataIn.size());
-    return &dataIn[index];
+unsigned int Merge::getConnectedPortIndex() {
+    return 0;
+}
+
+const Port& Merge::getInputPort(unsigned int index) {
+    return dataIn[index];
+}
+
+const Port& Merge::getDataInPort(unsigned int index) {
+    assert(index < dataIn.size());
+    return dataIn[index];
 }
 
 void Merge::printBlock(ostream& file) {
@@ -582,9 +628,10 @@ void Merge::printBlock(ostream& file) {
 }
 
 void Merge::printChannels(ostream& file) {
-    assert(connectedPort.first != nullptr and connectedPort.second != nullptr);
+    assert(connectedPort.first != nullptr and connectedPort.second != -1);
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        dataOut.getName() << ", to = " << connectedPort.second->getName() << "];"
+        dataOut.getName() << ", to = " << 
+        connectedPort.first->getInputPort(connectedPort.second).getName() << "];"
         << endl;
 }
 
@@ -603,7 +650,7 @@ Select::Select(const BasicBlock* parentBB, int portWidth,
     Block("Select" + to_string(instanceCounter), parentBB,
     BlockType::Select_Block, blockDelay), dataTrue("inTrue", portWidth, Port::True),
     dataFalse("inFalse", portWidth, Port::False), condition("condition", 1, Port::Condition),
-    dataOut("out", portWidth), connectedPort(nullptr, nullptr)
+    dataOut("out", portWidth), connectedPort(nullptr, -1)
 {
     ++instanceCounter;
 }
@@ -644,29 +691,39 @@ void Select::setDataOutPortDelay(unsigned int delay) {
     dataOut.setDelay(delay);
 }
 
-pair <Block*, const Port*> Select::getConnectedPort() {
+pair <Block*, int> Select::getConnectedPort() {
     return connectedPort;
 }
 
-void Select::setConnectedPort(pair <Block*, const Port*> connection) {
+void Select::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool Select::connectionAvailable() {
     return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
 }
 
-const Port* Select::getDataInTruePort() {
-    return &dataTrue;
+unsigned int Select::getConnectedPortIndex() {
+    return 0;
 }
 
-const Port* Select::getDataInFalsePort() {
-    return &dataFalse;
+const Port& Select::getInputPort(unsigned int index) {
+    if (index == 0) return dataTrue;
+    else if (index == 1) return dataFalse;
+    else return condition;
 }
 
-const Port* Select::getConditionInPort() {
-    return &condition;
+const Port& Select::getDataInTruePort() {
+    return dataTrue;
+}
+
+const Port& Select::getDataInFalsePort() {
+    return dataFalse;
+}
+
+const Port& Select::getConditionInPort() {
+    return condition;
 }
 
 void Select::printBlock(ostream& file) {
@@ -711,9 +768,10 @@ void Select::printBlock(ostream& file) {
 }
 
 void Select::printChannels(ostream& file) {
-    assert(connectedPort.first != nullptr and connectedPort.second != nullptr);
+    assert(connectedPort.first != nullptr and connectedPort.second != -1);
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        dataOut.getName() << ", to = " << connectedPort.second->getName() << "];"
+        dataOut.getName() << ", to = " << 
+        connectedPort.first->getInputPort(connectedPort.second).getName() << "];"
         << endl;
 }
 
@@ -733,10 +791,10 @@ Branch::Branch(const BasicBlock* parentBB, int portWidth,
     BlockType::Branch_Block, blockDelay), dataIn("in", portWidth), 
     condition("condition", 1, Port::Condition), dataTrue("outTrue", portWidth, 
     Port::True), dataFalse("outFalse", portWidth, Port::False), 
-    connectedPortTrue(nullptr, nullptr), connectedPortFalse(nullptr, nullptr)
+    connectedPortTrue(nullptr, -1), connectedPortFalse(nullptr, -1)
 {
     ++instanceCounter;
-    currentPort = None;
+    currentPort = false;
 }
 
 Branch::~Branch() {}
@@ -775,43 +833,45 @@ void Branch::setDataFalsePortDelay(unsigned int delay) {
     dataFalse.setDelay(delay);
 }
 
-pair <Block*, const Port*> Branch::getConnectedPort() {
-    assert(currentPort != None);
-    if (currentPort == True) return connectedPortTrue;
+pair <Block*, int> Branch::getConnectedPort() {
+    if (currentPort) return connectedPortTrue;
     return connectedPortFalse;
 }
 
-void Branch::setConnectedPort(pair <Block*, const Port*> connection) {
-    assert(currentPort != None);
-    if (currentPort == True) connectedPortTrue = connection;
+void Branch::setConnectedPort(pair <Block*, int> connection) {
+    if (currentPort) connectedPortTrue = connection;
     else connectedPortFalse = connection;
 }
 
 bool Branch::connectionAvailable() {
-    assert(currentPort != None);
-    if (currentPort == True) {
+    if (currentPort) {
         return (connectedPortTrue.first == nullptr and
-            connectedPortTrue.second == nullptr);
+            connectedPortTrue.second == -1);
     }
     return (connectedPortFalse.first == nullptr and
-        connectedPortFalse.second == nullptr);
-    
+        connectedPortFalse.second == -1);
 }
 
-void Branch::setCurrentPort(BranchCurrentPort currentPort) {
+unsigned int Branch::getConnectedPortIndex() {
+    if (currentPort) return 1;
+    else return 0;
+}
+
+const Port& Branch::getInputPort(unsigned int index) {
+    if (index == 0) return dataIn;
+    else return condition;
+}
+
+void Branch::setCurrentPort(bool currentPort) {
     this->currentPort = currentPort;
 }
 
-bool Branch::isCurrentPortSet() {
-    return (currentPort != None);
+const Port& Branch::getDataInPort() {
+    return dataIn;
 }
 
-const Port* Branch::getDataInPort() {
-    return &dataIn;
-}
-
-const Port* Branch::getConditionInPort() {
-    return &condition;
+const Port& Branch::getConditionInPort() {
+    return condition;
 }
 
 void Branch::printBlock(ostream& file) {
@@ -855,16 +915,18 @@ void Branch::printBlock(ostream& file) {
 }
 
 void Branch::printChannels(ostream& file) {
-    assert((connectedPortTrue.first != nullptr and connectedPortTrue.second != nullptr) or
-        (connectedPortFalse.first != nullptr and connectedPortFalse.second != nullptr));
+    assert((connectedPortTrue.first != nullptr and connectedPortTrue.second != -1) or
+        (connectedPortFalse.first != nullptr and connectedPortFalse.second != -1));
     if (connectedPortTrue.first != nullptr) {
         file << blockName << " -> " << connectedPortTrue.first->getBlockName() << " [from = " <<
-            dataTrue.getName() << ", to = " << connectedPortTrue.second->getName() << "];"
+            dataTrue.getName() << ", to = " << 
+            connectedPortTrue.first->getInputPort(connectedPortTrue.second).getName() << "];"
             << endl;
     }
     if (connectedPortFalse.first != nullptr) {
         file << blockName << " -> " << connectedPortFalse.first->getBlockName() << " [from = " <<
-            dataFalse.getName() << ", to = " << connectedPortFalse.second->getName() << "];"
+            dataFalse.getName() << ", to = " << 
+            connectedPortFalse.first->getInputPort(connectedPortFalse.second).getName() << "];"
             << endl;    
     }
 }
@@ -890,17 +952,16 @@ Demux::Demux(const BasicBlock* parentBB, int portWidth,
 
 Demux::~Demux() {}
 
-const Port* Demux::addControlInPort(unsigned int delay) {
+unsigned int Demux::addControlInPort(unsigned int delay) {
     control.push_back(Port("control" + to_string(control.size()),
         0, Port::Base, delay));
-    return &control.back();
+    return control.size();
 }
 
 void Demux::addDataOutPort(unsigned int delay) {
     dataOut.push_back(Port("out" + to_string(dataOut.size()), dataIn.getWidth(), 
         Port::Base, delay));
-    connectedPorts.push_back(make_pair(nullptr, nullptr));
-    
+    connectedPorts.push_back(make_pair(nullptr, -1));
 }
 
 void Demux::setDataInPortWidth(int width) {
@@ -938,7 +999,7 @@ void Demux::setCurrentConnectedPort(int current) {
     currentConnected = current;
 }
 
-pair <Block*, const Port*> Demux::getConnectedPort() {
+pair <Block*, int> Demux::getConnectedPort() {
     if (currentConnected > -1) {
         return connectedPorts[currentConnected];
     }
@@ -948,7 +1009,7 @@ pair <Block*, const Port*> Demux::getConnectedPort() {
     }
 }
 
-void Demux::setConnectedPort(pair <Block*, const Port*> connection) {
+void Demux::setConnectedPort(pair <Block*, int> connection) {
     if (currentConnected > -1) {
         connectedPorts[currentConnected] = connection;
     }
@@ -961,22 +1022,31 @@ void Demux::setConnectedPort(pair <Block*, const Port*> connection) {
 bool Demux::connectionAvailable() {
     if (currentConnected > -1) {
         return (connectedPorts[currentConnected].first == nullptr and
-            connectedPorts[currentConnected].second == nullptr);
+            connectedPorts[currentConnected].second == -1);
     }
     else {
         assert(connectedPorts.size() > 0);
-        pair <Block*, const Port*>& last = connectedPorts.back();
-        return (last.first == nullptr and last.second == nullptr);
+        pair <Block*, int>& last = connectedPorts.back();
+        return (last.first == nullptr and last.second == -1);
     }
 }
 
-const Port* Demux::getControlInPort(unsigned int index) {
-    assert(index < control.size());
-    return &control[index];
+unsigned int Demux::getConnectedPortIndex() {
+    return currentConnected;
 }
 
-const Port* Demux::getDataInPort() {
-    return &dataIn;
+const Port& Demux::getInputPort(unsigned int index) {
+    if (index == 0) return dataIn;
+    else return control[index-1];
+}
+
+const Port& Demux::getControlInPort(unsigned int index) {
+    assert(index < control.size());
+    return control[index];
+}
+
+const Port& Demux::getDataInPort() {
+    return dataIn;
 }
 
 void Demux::printBlock(ostream& file) {
@@ -1053,9 +1123,10 @@ void Demux::printBlock(ostream& file) {
 
 void Demux::printChannels(ostream& file) {
     for (unsigned int i = 0; i < dataOut.size(); ++i) {
-        assert(connectedPorts[i].first != nullptr and connectedPorts[i].second != nullptr);
+        assert(connectedPorts[i].first != nullptr and connectedPorts[i].second != -1);
         file << blockName << " -> " << connectedPorts[i].first->getBlockName() << " [from = " <<
-            dataOut[i].getName() << ", to = " << connectedPorts[i].second->getName() << "];"
+            dataOut[i].getName() << ", to = " << 
+            connectedPorts[i].first->getInputPort(connectedPorts[i].second).getName() << "];"
             << endl;
     }
 }
@@ -1074,7 +1145,7 @@ EntryInterf::EntryInterf(const string& blockName, const BasicBlock* parentBB,
     int portWidth, unsigned int blockDelay) : 
     Block(blockName, parentBB, BlockType::Entry_Block, blockDelay),
     inPort("control", 0), outPort("out", portWidth), 
-    connectedPort(nullptr, nullptr) {}
+    connectedPort(nullptr, -1) {}
 
 EntryInterf::~EntryInterf() {}
 
@@ -1086,21 +1157,29 @@ void EntryInterf::setOutPortDelay(unsigned int delay) {
     outPort.setDelay(delay);
 }
 
-pair <Block*, const Port*> EntryInterf::getConnectedPort() {
+pair <Block*, int> EntryInterf::getConnectedPort() {
     return connectedPort;
 }
 
-void EntryInterf::setConnectedPort(pair <Block*, const Port*> connection) {
+void EntryInterf::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool EntryInterf::connectionAvailable() {
     return (connectedPort.first == nullptr and 
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
 }
 
-const Port* EntryInterf::getControlInPort() {
-    return &inPort;
+unsigned int EntryInterf::getConnectedPortIndex() {
+    return 0;
+}
+
+const Port& EntryInterf::getInputPort(unsigned int index) {
+    return inPort;
+}
+
+const Port& EntryInterf::getControlInPort() {
+    return inPort;
 }
 
 void EntryInterf::printBlock(ostream &file) {
@@ -1129,9 +1208,10 @@ void EntryInterf::printBlock(ostream &file) {
 }
 
 void EntryInterf::printChannels(ostream& file) {
-    assert(connectedPort.first != nullptr and connectedPort.second != nullptr);
+    assert(connectedPort.first != nullptr and connectedPort.second != -1);
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        outPort.getName() << ", to = " << connectedPort.second->getName() << "];"
+        outPort.getName() << ", to = " << 
+        connectedPort.first->getInputPort(connectedPort.second).getName() << "];"
         << endl;
 }
 
@@ -1195,7 +1275,7 @@ ExitInterf::ExitInterf(const string& blockName, const BasicBlock* parentBB,
     int portWidth, unsigned int blockDelay) :
     Block(blockName, parentBB, BlockType::Exit_Block, blockDelay),
     inPort("in", portWidth), outPort("controlOut", 0),
-    connectedPort(nullptr, nullptr) {}
+    connectedPort(nullptr, -1) {}
 
 ExitInterf::~ExitInterf() {}
 
@@ -1207,21 +1287,29 @@ void ExitInterf::setOutPortDelay(unsigned int delay) {
     outPort.setDelay(delay);
 }
 
-pair <Block*, const Port*> ExitInterf::getConnectedPort()  {
+pair <Block*, int> ExitInterf::getConnectedPort()  {
     return connectedPort;
 }
 
-void ExitInterf::setConnectedPort(pair <Block*, const Port*> connection) {
+void ExitInterf::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
 
 bool ExitInterf::connectionAvailable() {
     return (connectedPort.first == nullptr and
-        connectedPort.second == nullptr);
+        connectedPort.second == -1);
 }
 
-const Port* ExitInterf::getInPort() {
-    return &inPort;
+unsigned int ExitInterf::getConnectedPortIndex() {
+    return 0;
+}
+
+const Port& ExitInterf::getInputPort(unsigned int index) {
+    return inPort;
+}
+
+const Port& ExitInterf::getInPort() {
+    return inPort;
 }
 
 void ExitInterf::printBlock(ostream &file) {
@@ -1238,9 +1326,10 @@ void ExitInterf::printBlock(ostream &file) {
 }
 
 void ExitInterf::printChannels(ostream& file) {
-    if(connectedPort.first != nullptr and connectedPort.second != nullptr)
+    if(connectedPort.first != nullptr and connectedPort.second != -1)
     file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
-        outPort.getName() << ", to = " << connectedPort.second->getName() << "];"
+        outPort.getName() << ", to = " << 
+        connectedPort.first->getInputPort(connectedPort.second).getName() << "];"
         << endl;
 }
 
@@ -1297,37 +1386,65 @@ void Return::setDataPortWidth(int width) {
 */
 
 
-FunctionCall::FunctionCall() : 
-    Block("", nullptr, BlockType::FunctionCall_Block, 0) {}
+FunctionCall::FunctionCall(const BasicBlock* parentBB) : 
+    Block("", parentBB, BlockType::FunctionCall_Block, 0),
+    inputControlPort(nullptr, -1), connectedResultPort(nullptr, -1),
+    connectedControlPort(nullptr, -1) {}
 
 FunctionCall::~FunctionCall() {}
 
-void FunctionCall::setConnectedPortResult(pair <Block*, const Port*> connection) {
+void FunctionCall::setConnectedPortResult(pair <Block*, int> connection) {
     connectedResultPort = connection;
 }
 
-void FunctionCall::setConnectedPortControl(pair <Block*, const Port*> connection) {
+void FunctionCall::setConnectedPortControl(pair <Block*, int> connection) {
     connectedControlPort = connection;
 }
 
-pair <Block*, const Port*> FunctionCall::getConnectedPort() {
+pair <Block*, int> FunctionCall::getConnectedPort() {
     return connectedResultPort;
 }
 
-void FunctionCall::setConnectedPort(pair <Block*, const Port*> connection) {
+void FunctionCall::setConnectedPort(pair <Block*, int> connection) {
     connectedResultPort = connection;
 }
 
 bool FunctionCall::connectionAvailable() {
     return (connectedResultPort.first == nullptr and
-        connectedResultPort.second == nullptr);
+        connectedResultPort.second == -1);
 }
 
-pair <Block*, const Port*> FunctionCall::getConnecDataPort() {
+unsigned int FunctionCall::getConnectedPortIndex() {
+    assert(0);
+}
+
+const Port& FunctionCall::getInputPort(unsigned int index) {
+    assert(0);
+}
+
+void FunctionCall::addInputArgPort(pair <Block*, int> connection) {
+    inputArgumentPorts.push_back(connection);
+}
+
+void FunctionCall::setInputContPort(pair <Block*, int> connection) {
+    inputControlPort = connection;
+}
+
+pair <Block*, int> FunctionCall::getInputArgPort(unsigned int index) {
+    assert(index < inputArgumentPorts.size());
+    return inputArgumentPorts[index];
+}
+
+pair <Block*, int> FunctionCall::getInputContPort() {
+    return inputControlPort;
+}
+
+
+pair <Block*, int> FunctionCall::getConnecDataPort() {
     return connectedResultPort;
 }
 
-pair <Block*, const Port*> FunctionCall::getConnecControlPort() {
+pair <Block*, int> FunctionCall::getConnecControlPort() {
     return connectedControlPort;
 }
 

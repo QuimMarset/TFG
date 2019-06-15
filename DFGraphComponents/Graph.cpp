@@ -107,6 +107,15 @@ void FunctionGraph::addBasicBlock(StringRef BBName, int id) {
     currentBB = &basicBlocks[BBName];
 }
 
+bool FunctionGraph::existsBB(StringRef BBName) {
+    return (basicBlocks.find(BBName) != basicBlocks.end());
+}
+
+void FunctionGraph::setCurrentBB(StringRef BBName) {
+    assert(basicBlocks.find(BBName) != basicBlocks.end());
+    currentBB = &basicBlocks[BBName];
+}
+
 void FunctionGraph::addBlockToBB(Block* block) {
     currentBB->addBlock(block);
 }

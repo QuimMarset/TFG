@@ -98,7 +98,7 @@ void LiveVarsPass::computePhiVars(const BasicBlock& BB) {
                 liveOutVars[predBBName].insert(value);
             }
             else if (isa<Constant>(value)) {
-                phiConstants[predBBName].insert(value);
+                phiConstants[predBBName].insert(make_pair(phi, i));
             }
         }
     }
@@ -167,9 +167,10 @@ void LiveVarsPass::setInputFileName(StringRef name) {
 void LiveVarsPass::setCurrentFunc(Function& F) {
     funcName = F.getName();
     for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
-        liveInVars.insert(make_pair(bb_it->getName(), set<const Value*>()));
-        liveOutVars.insert(make_pair(bb_it->getName(), set<const Value*>()));
-        phiConstants.insert(make_pair(bb_it->getName(), set<const Value*>()));
+        liveInVars.insert(make_pair(bb_it->getName(), set <const Value*>()));
+        liveOutVars.insert(make_pair(bb_it->getName(), set <const Value*>()));
+        phiConstants.insert(make_pair(bb_it->getName(), 
+            set <pair <const PHINode*, unsigned int> >()));
     }
 }
 

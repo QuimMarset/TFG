@@ -68,17 +68,17 @@ private:
 
     void processCallInst(const Instruction& inst);
 
-    void processOperator(const Value* operand, pair <Block*, const Port*> connection,
+    void processOperator(const Value* operand, pair <Block*, int> connection,
         const BasicBlock* BB);
 
     void processLiveIn(const BasicBlock* BB);
     void processPhiConstants(const BasicBlock* BB);
 
     void processBBEntryControl(const BasicBlock* BB); 
-    void connectOrphanBlock(pair <Block*, const Port*> connection);
+    void connectOrphanBlock(pair <Block*, int> connection);
     void processBBExitControl(const BasicBlock* BB);
 
-    void connectBlocks(Block* block, pair<Block*, const Port*> connection,
+    void connectBlocks(Block* block, pair<Block*, int> connection,
         const Value* value = nullptr);
 
 

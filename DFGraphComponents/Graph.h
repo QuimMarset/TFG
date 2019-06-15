@@ -57,6 +57,10 @@ public:
 
     void addBasicBlock(StringRef BBName, int id);
 
+    bool existsBB(StringRef BBName);
+
+    void setCurrentBB(StringRef BBName);
+
     void addBlockToBB(Block* block);
     void addBlockToBB(StringRef BBName, Block* block);
 

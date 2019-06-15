@@ -24,7 +24,7 @@ public:
 
     map <StringRef, set <const Value*> > liveInVars;
     map <StringRef, set <const Value*> > liveOutVars;
-    map <StringRef, set <const Value*> > phiConstants;
+    map <StringRef, set <pair <const PHINode*, unsigned int > > > phiConstants;
 
     static char ID;
 
