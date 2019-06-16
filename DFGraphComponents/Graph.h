@@ -88,7 +88,6 @@ public:
 
     void addWrapperCallParam(Block* block);
     Block* getWrapperCallParam(unsigned int index);
-    void setWrapperCallParam(unsigned int index, Block* block);
 
     Block* getWrapperControlIn();
     void setWrapperControlIn(Block* block);
@@ -104,9 +103,6 @@ public:
 
     FunctionCall* getFunctionCallBlock(unsigned int index);
     void addFunctionCallBlock(FunctionCall* block);
-
-    const CallInst* getFirstCallInst();
-    void setFirstCallInst(const CallInst* inst);
 
     string getFunctionName();
     void setFunctionName(const string& funcitonName);
@@ -140,14 +136,9 @@ private:
         vector <Fork*> controlInForks;
         Demux* controlOut;
         Demux* result;
-        const CallInst* firstCallInst;
     };
-
     CallWrapper wrapper;
     
-    
-    // vector <BBGraph> basicBlocks;
-
 };
 
 

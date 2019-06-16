@@ -6,7 +6,6 @@
 #include <fstream>
 #include <assert.h>
 #include "SupportTypes.h"
-#include <iostream>
 #include "llvm/IR/BasicBlock.h"
 
 using namespace std;
@@ -57,7 +56,7 @@ class Operator : public Block {
 
 public:
 
-    Operator(OpType opType, const BasicBlock* parentBB, 
+    Operator(OpType opType, const BasicBlock* parentBB = nullptr, 
         int portWidth = -1, unsigned int blockDelay = 0, 
         unsigned int latency = 0, unsigned int II = 0);
     ~Operator();
@@ -76,13 +75,10 @@ public:
     void setDataInPortDelay(unsigned int index, unsigned int delay);
     void setDataOutPortDelay(unsigned int delay);
 
-    const Port& getDataInPort(unsigned int index);
-
     pair <Block*, int> getConnectedPort() override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
 
     void printBlock(ostream& file) override;
@@ -124,10 +120,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getDataInPort();
 
     void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -157,10 +150,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getControlInPort();
 
     void printChannels(ostream& file) override;
 
@@ -170,8 +160,8 @@ protected:
     ConstantInterf(const BasicBlock* parentBB, int portWidth, 
         unsigned int blockDelay);
     virtual ~ConstantInterf();
-    Port control;
-    Port data;
+    Port controlIn;
+    Port dataOut;
     pair <Block*, int> connectedPort;
     static unsigned int instanceCounter;
 
@@ -216,23 +206,25 @@ void Constant<T>::setValue(T value) {
 template <typename T>
 void Constant<T>::printBlock(ostream &file) {
     file << blockName << "[type = Constant";
-    file << ", in = \"" << control << "\"";
-    file << ", out = \"" << data << "\"";
+    file << ", in = \"" << controlIn << "\"";
+    file << ", out = \"" << dataOut << "\"";
+    bool first = true;
     if (control.getDelay() > 0) {
-        file << ", delay = \"" ;
-        file << control.getName() << ":" << control.getDelay();
-        if (blockDelay > 0) file << " " << blockDelay;
-        if (data.getDelay() > 0) file << " " << data.getName() << 
-            ":" << data.getDelay();
-        file << "\"";
-    }
-    else if (data.getDelay() > 0) {
         file << ", delay = \"";
-        if (blockDelay > 0) file << blockDelay;
-        file << " " << data.getName() << 
-            ":" << data.getDelay() << "\""; 
+        first = false;
+        file << controlIn.getName() << ":" << controlIn.getDelay();
     }
-    else if (blockDelay > 0) file << ", delay = " << blockDelay;
+    if (dataOut.getDelay() > 0) {
+        if (first) {
+            first = false;
+            file << ", delay = \"";
+        }
+        else file << " ";
+        if (blockDelay > 0) file << blockDelay << " "; 
+        file << " " << dataOut.getName() << ":" << dataOut.getDelay() << "\""; 
+    }
+    if (first and blockDelay > 0) file << ", delay = " << blockDelay;
+    else if (!first) file << "\"";
     file << ", value = " << value;
     file << "];" << endl;
 }
@@ -246,8 +238,6 @@ public:
         unsigned int blockDelay = 0);
     ~Fork();
 
-    void setDataInPortWidth(int width);
-    void setDataOutPortWidth(unsigned int index, int width);
     void setDataPortWidth(int width);
 
     void setDataInPortDelay(unsigned int delay);
@@ -257,12 +247,8 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
-    void setOutPort(unsigned int index, pair <Block*, int> connection);
-
-    const Port& getDataInPort();
-
     const Port& getInputPort(unsigned int index) override;
+    void setOutPort(unsigned int index, pair <Block*, int> connection);
 
     void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -287,8 +273,6 @@ public:
 
     unsigned int addDataInPort(unsigned int delay = 0);
 
-    void setDataInPortWidth(unsigned int index, int width);
-    void setDataOutPortWidth(int width);
     void setDataPortWidth(int width);
 
     void setDataInPortDelay(unsigned int index, unsigned int delay);
@@ -298,10 +282,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getDataInPort(unsigned int index);
 
     void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -323,9 +304,6 @@ public:
         unsigned int blockDelay = 0);
     ~Select();
 
-    void setDataTruePortWidth(int width);
-    void setDataFalsePortWidth(int width);
-    void setDataOutPortWidth(int width);
     void setDataPortWidth(int width);
 
     void setDataTruePortDelay(unsigned int delay);
@@ -337,12 +315,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getDataInTruePort();
-    const Port& getDataInFalsePort();
-    const Port& getConditionInPort();
 
     void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -366,9 +339,6 @@ public:
         unsigned int blockDelay = 0);
     ~Branch();
 
-    void setDataInPortWidth(int width);
-    void setDataTruePortWidth(int width);
-    void setDataFalsePortWidth(int width);  
     void setDataPortWidth(int width);
 
     void setDataInPortDelay(unsigned int delay);
@@ -380,13 +350,9 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
 
     void setCurrentPort(bool currentPort);
-
-    const Port& getDataInPort();
-    const Port& getConditionInPort();
 
     void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -416,8 +382,6 @@ public:
     unsigned int addControlInPort(unsigned int delay = 0);
     void addDataOutPort(unsigned int delay = 0);
     
-    void setDataInPortWidth(int width);
-    void setDataOutPortWidth(unsigned int index, int width);
     void setDataPortWidth(int width);
 
     void setControlPortDelay(unsigned int index, unsigned int delay);
@@ -430,11 +394,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getControlInPort(unsigned int index);
-    const Port& getDataInPort();
 
     void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -461,10 +421,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getControlInPort();
 
     virtual void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;
@@ -492,6 +449,7 @@ public:
 private:
 
     static unsigned int instanceCounter;
+
 };
 
 
@@ -523,10 +481,7 @@ public:
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
-
     const Port& getInputPort(unsigned int index) override;
-
-    const Port& getInPort();
 
     virtual void printBlock(ostream &file) override;
     void printChannels(ostream& file) override;

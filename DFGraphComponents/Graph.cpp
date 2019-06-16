@@ -194,11 +194,6 @@ Block* FunctionGraph::getWrapperCallParam(unsigned int index) {
     return wrapper.paramsCall[index];
 }
 
-void FunctionGraph::setWrapperCallParam(unsigned int index, Block* block) {
-    assert(index < wrapper.paramsCall.size());
-    wrapper.paramsCall[index] = block;
-}
-
 Block* FunctionGraph::getWrapperControlIn() {
     return wrapper.controlIn;
 }
@@ -239,14 +234,6 @@ FunctionCall* FunctionGraph::getFunctionCallBlock(unsigned int index) {
 
 void FunctionGraph::addFunctionCallBlock(FunctionCall* block) {
     wrapper.callBlocks.push_back(block);
-}
-
-const CallInst* FunctionGraph::getFirstCallInst() {
-    return wrapper.firstCallInst;
-}
-
-void FunctionGraph::setFirstCallInst(const CallInst* inst) {
-    wrapper.firstCallInst = inst;
 }
 
 string FunctionGraph::getFunctionName() {
