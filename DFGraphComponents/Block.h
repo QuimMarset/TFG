@@ -191,8 +191,8 @@ Constant<T>::Constant(T value, const BasicBlock* parentBB,
     : ConstantInterf(parentBB, portWidth, blockDelay)
 {
     this->value = value;
-    if (portWidth != -1) data.setWidth(portWidth);
-    else data.setWidth(sizeof(T)*8);
+    if (portWidth != -1) dataOut.setWidth(portWidth);
+    else dataOut.setWidth(sizeof(T)*8);
 }
 
 template <typename T>
@@ -209,7 +209,7 @@ void Constant<T>::printBlock(ostream &file) {
     file << ", in = \"" << controlIn << "\"";
     file << ", out = \"" << dataOut << "\"";
     bool first = true;
-    if (control.getDelay() > 0) {
+    if (controlIn.getDelay() > 0) {
         file << ", delay = \"";
         first = false;
         file << controlIn.getName() << ":" << controlIn.getDelay();

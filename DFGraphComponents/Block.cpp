@@ -1016,7 +1016,7 @@ void Demux::printBlock(ostream& file) {
             file << control[i].getName() << ":" << control[i].getDelay();
         }
     }
-    if (dataIn.getDelay > 0) {
+    if (dataIn.getDelay() > 0) {
         if (first) {
             file << ", delay = \"";
             first = false;
@@ -1032,7 +1032,7 @@ void Demux::printBlock(ostream& file) {
                 first = false;
             }
             else file << " ";
-            if (dataIn.getDelay == 0 and blockDelay > 0) file << blockDelay << " ";
+            if (dataIn.getDelay() == 0 and blockDelay > 0) file << blockDelay << " ";
             file << dataOut[i].getName() << ":" << dataOut[i].getDelay();
         }
     }
@@ -1108,7 +1108,6 @@ void EntryInterf::printBlock(ostream &file) {
     file << ", in = \"" << inPort << "\"";
     file << ", out = \"" << outPort << "\"";
     bool first = true;
-    file << ", delay = \"";
     if (inPort.getDelay() > 0) {
         if (first) {
             first = false;
@@ -1260,17 +1259,17 @@ void ExitInterf::printBlock(ostream &file) {
 }
 
 void ExitInterf::printChannels(ostream& file) {
-    if(connectedPort.first != nullptr and connectedPort.second != -1)
-    file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
+    if (connectedPort.first != nullptr and connectedPort.second != -1) {
+        file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
         outPort.getName() << ", to = " << 
-        connectedPort.first->getInputPort(connectedPort.second).getName() << "];"
-        << endl;
-    unsigned int width = outPort.getWidth;
-    file << ", color = ";
-    if (width == 0) file << "red";
-    else if (width == 1) file << "magenta";
-    else file << "blue";
-    file << "];" << endl;
+        connectedPort.first->getInputPort(connectedPort.second).getName();
+        unsigned int width = outPort.getWidth();
+        file << ", color = ";
+        if (width == 0) file << "red";
+        else if (width == 1) file << "magenta";
+        else file << "blue";
+        file << "];" << endl;
+    }
 }
 
 
