@@ -27,40 +27,62 @@ struct GetElemPtrPass : public FunctionPass {
                     GetElementPtrInst* inst = cast<GetElementPtrInst>(it2);
                     IRBuilder<> builder(inst); 
                     Value* resultPtr;
+                    unsigned int numCsts = 0;
                     if (inst->hasAllZeroIndices()) {
                         resultPtr = builder.CreateBitCast(inst->getOperand(0), inst->getType());
                     }
                     else {
                         Type* intType = DL.getIntPtrType(inst->getType());
+                        unsigned int typeSize = DL.getTypeSizeInBits(intType);
                         resultPtr = builder.CreatePtrToInt(inst->getOperand(0), intType);
-                        Value* index;
-                        for (gep_type_iterator gti = gep_type_begin(*inst); 
-                            gti != gep_type_end(*inst); ++gti) 
-                        {
-                            index = gti.getOperand();
-                            if (ConstantInt* constant = dyn_cast<ConstantInt>(index)) {
-                                if (constant->isZero()) continue;
-                            }
-                            if (gti.isSequential()) {
-                                APInt elemSize = APInt(intType->getIntegerBitWidth(), 
-                                    DL.getTypeAllocSize(gti.getIndexedType()));
-                                if (elemSize != 1) {
-                                    if (elemSize.isPowerOf2()) {
-                                        index = builder.CreateShl(index, 
-                                            ConstantInt::get(intType, elemSize.logBase2())); 
-                                    } 
-                                    else {
-                                        index = builder.CreateMul(index, 
-                                            ConstantInt::get(intType, elemSize));
+                        APInt intOffset = APInt(typeSize, 0);
+                        if (inst->accumulateConstantOffset(DL, intOffset)) {
+                            resultPtr = builder.CreateAdd(resultPtr, 
+                                ConstantInt::get(intType, intOffset));
+                        }
+                        else {
+                            Value* cstOffset = ConstantInt::get(intType, APInt(typeSize, 0));
+                            bool isConstant = false;
+                            Value* index;
+                            for (gep_type_iterator gti = gep_type_begin(*inst); 
+                                gti != gep_type_end(*inst); ++gti) 
+                            {
+                                index = gti.getOperand();
+                                if (ConstantInt* constant = dyn_cast<ConstantInt>(index)) {
+                                    if (constant->isZero()) continue;
+                                    else isConstant = true;
+                                }
+                                if (gti.isSequential()) {
+                                    APInt elemSize = APInt(intType->getIntegerBitWidth(), 
+                                        DL.getTypeAllocSize(gti.getIndexedType()));
+                                    if (elemSize != 1) {
+                                        if (elemSize.isPowerOf2()) {
+                                            index = builder.CreateShl(index, 
+                                                ConstantInt::get(intType, elemSize.logBase2())); 
+                                        } 
+                                        else {
+                                            index = builder.CreateMul(index, 
+                                                ConstantInt::get(intType, elemSize));
+                                        }
                                     }
                                 }
+                                else if (gti.isStruct()) {
+                                    unsigned int idxValue = dyn_cast<ConstantInt>(index)->getZExtValue();
+                                    const StructLayout* sl = DL.getStructLayout(gti.getStructType());
+                                    index = ConstantInt::get(intType, sl->getElementOffset(idxValue));
+                                }
+                                if (isConstant) {
+                                    cstOffset = builder.CreateAdd(cstOffset, index);
+                                    isConstant = false;
+                                    numCsts++;
+                                }
+                                else {
+                                    resultPtr = builder.CreateAdd(resultPtr, index);
+                                }
                             }
-                            else if (gti.isStruct()) {
-                                unsigned int idxValue = dyn_cast<ConstantInt>(index)->getZExtValue();
-                                const StructLayout* sl = DL.getStructLayout(gti.getStructType());
-                                index = ConstantInt::get(intType, sl->getElementOffset(idxValue));
+                            if (numCsts > 0) {
+                                resultPtr = builder.CreateAdd(resultPtr, cstOffset);
                             }
-                            resultPtr = builder.CreateAdd(resultPtr, index);
                         }
                         resultPtr = builder.CreateIntToPtr(resultPtr, inst->getType());
                     }

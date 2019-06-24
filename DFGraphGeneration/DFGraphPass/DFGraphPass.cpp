@@ -19,7 +19,8 @@ void DFGraphPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 
 bool DFGraphPass::runOnModule(Module& M) {
-    file.open("test.dot");
+    string fileName = M.getModuleIdentifier();
+    file.open(fileName.substr(0, fileName.size()-3) + ".dot");
     DL = DataLayout(&M);
     for (Module::iterator it = M.begin(); it != M.end(); ++it) {
         processFunction(*it);
@@ -42,13 +43,16 @@ bool DFGraphPass::runOnModule(Module& M) {
 
 void DFGraphPass::processFunction(Function &F) {
     BBNumber = 0;
-    controlSynch = nullptr;
+    if (F.isDeclaration()) {
+        assert(0 && "Function without body cannot be handled");
+    }
     liveness = &getAnalysis<LiveVarsPass>(F);
     StringRef funcName = F.getName();
     graphs[funcName] = FunctionGraph(funcName.str());
     graph = &graphs[funcName];
     bool firstBB = true;
     for (const BasicBlock& BB : F.getBasicBlockList()) {
+        controlSynch = nullptr;
         StringRef BBName = BB.getName();
         if (!graph->existsBB(BBName)) {
             varsMapping.insert(make_pair(BBName, map <const Value*, Block*>()));
@@ -77,10 +81,12 @@ void DFGraphPass::processFunction(Function &F) {
         for (BasicBlock::const_iterator inst_it = BB.begin(); inst_it != BB.end(); 
             ++inst_it) 
         {
-            if (isa <llvm::BinaryOperator>(inst_it) || isa<CmpInst>(inst_it)) 
-            {
+            if (isa <llvm::BinaryOperator>(inst_it) || isa<CmpInst>(inst_it)) {
                 processBinaryInst(*inst_it);
             }
+            // else if (inst_it->getOpcode == Instruction::FNeg) {
+            //     processUnaryInst(*inst_it);
+            // }
             else if (isa<AllocaInst>(inst_it)) {
                 processAllocaInst(*inst_it);
             }
@@ -128,7 +134,7 @@ void DFGraphPass::processFunction(Function &F) {
             }
         }
         processBBExitControl(&BB);
-    }//TODO: Globals vars (allocate memory)
+    }
     connectMerges();
     connectControlMerges();
 }
@@ -238,10 +244,22 @@ void DFGraphPass::processBinaryInst(const Instruction &inst)
     const BasicBlock* BB = inst.getParent();
     StringRef BBName = BB->getName();
     DFGraphComp::Operator* op = new DFGraphComp::Operator(opType, BB, typeSize);
-    processOperator(inst.getOperand(0), make_pair(op, 0), BB);
-    processOperator(inst.getOperand(1), make_pair(op, 1), BB);
+    processOperator(inst.getOperand(0), op, 0, BB);
+    processOperator(inst.getOperand(1), op, 1, BB);
     graph->addBlockToBB(op);
     varsMapping[BBName][&inst] = op;
+}
+
+
+void DFGraphPass::processUnaryInst(const Instruction &inst) {
+   const BasicBlock* BB = inst.getParent(); 
+   StringRef BBName = BB->getName();
+   OpType opType = OpType::FNeg;
+   unsigned int typeSize = DL.getTypeSizeInBits(inst.getType());
+   DFGraphComp::Operator* op = new DFGraphComp::Operator(opType, BB, typeSize);
+   processOperator(inst.getOperand(0), op, 0, BB);
+   graph->addBlockToBB(op);
+   varsMapping[BBName][&inst] = op;
 }
 
 
@@ -276,11 +294,11 @@ void DFGraphPass::processAllocaInst(const Instruction &inst)
     unsigned int ptrSize = DL.getTypeAllocSizeInBits(allocaInst->getType());
     DFGraphComp::Constant<unsigned int>* allocBytesBlock = 
         new DFGraphComp::Constant<unsigned int>(allocBytes, BB);
-    connectOrphanBlock(make_pair(allocBytesBlock, 0));
+    connectOrphanBlock(allocBytesBlock, 0);
     DFGraphComp::Operator* allocaBlock = new DFGraphComp::Operator(OpType::Alloca, BB);
     allocaBlock->setDataInPortWidth(0, sizeof(unsigned int));
     allocaBlock->setDataOutPortWidth(ptrSize);
-    allocBytesBlock->setConnectedPort(make_pair(allocaBlock, 0));
+    allocBytesBlock->setConnectedPort(allocaBlock, 0);
     graph->addBlockToBB(allocBytesBlock);
     graph->addBlockToBB(allocaBlock);
     varsMapping[BBName][&inst] = allocaBlock;
@@ -298,8 +316,7 @@ void DFGraphPass::processLoadInst(const Instruction &inst)
     DFGraphComp::Operator* loadOp = new DFGraphComp::Operator(OpType::Load, BB);
     loadOp->setDataInPortWidth(0, pointerSize);
     loadOp->setDataOutPortWidth(valueTypeSize);
-    processOperator(loadInst->getPointerOperand(), make_pair(loadOp, 0),
-        inst.getParent());
+    processOperator(loadInst->getPointerOperand(), loadOp, 0, inst.getParent());
     varsMapping[BBName][&inst] = loadOp;
     graph->addBlockToBB(loadOp);
 }
@@ -315,8 +332,8 @@ void DFGraphPass::processStoreInst(const Instruction &inst)
     DFGraphComp::Operator* store = new DFGraphComp::Operator(OpType::Store, BB);
     store->setDataInPortWidth(0, storeValueSize);
     store->setDataInPortWidth(1, pointerSize);
-    processOperator(storeInst->getValueOperand(), make_pair(store, 0), BB);
-    processOperator(storeInst->getPointerOperand(), make_pair(store, 1), BB);
+    processOperator(storeInst->getValueOperand(), store, 0, BB);
+    processOperator(storeInst->getPointerOperand(), store, 1, BB);
     graph->addBlockToBB(store);
 }
 
@@ -374,7 +391,7 @@ void DFGraphPass::processCastInst(const Instruction &inst)
     DFGraphComp::Operator* castOp = new DFGraphComp::Operator(castOpType, BB);
     castOp->setDataInPortWidth(0, operandTypeSize);
     castOp->setDataOutPortWidth(castTypeSize);
-    processOperator(operand, make_pair(castOp, 0), BB);
+    processOperator(operand, castOp, 0, BB);
     varsMapping[BBName][&inst] = castOp;
     graph->addBlockToBB(castOp);
 }
@@ -388,9 +405,9 @@ void DFGraphPass::processSelectInst(const Instruction &inst)
     const SelectInst* selectInst = cast<SelectInst>(&inst);
     unsigned int typeSize = DL.getTypeSizeInBits(selectInst->getType());
     Select* selectBlock = new Select(BB, typeSize);
-    processOperator(selectInst->getTrueValue(), make_pair(selectBlock, 0), BB);
-    processOperator(selectInst->getFalseValue(), make_pair(selectBlock, 1), BB);
-    processOperator(selectInst->getCondition(), make_pair(selectBlock, 2), BB);
+    processOperator(selectInst->getTrueValue(), selectBlock, 0, BB);
+    processOperator(selectInst->getFalseValue(), selectBlock, 1, BB);
+    processOperator(selectInst->getCondition(), selectBlock, 2, BB);
     graph->addBlockToBB(selectBlock);
     varsMapping[BBName][&inst] = selectBlock;
 }
@@ -405,7 +422,7 @@ void DFGraphPass::processReturnInst(const Instruction &inst)
         Value* operand = inst.getOperand(0);
         unsigned int typeSize = DL.getTypeSizeInBits(operand->getType());
         Return* retBlock = new Return(BB, typeSize);
-        processOperator(operand, make_pair(retBlock, 0), BB);
+        processOperator(operand, retBlock, 0, BB);
         graph->addBlockToBB(retBlock);
         varsMapping[BBName][&inst] = retBlock;
         Block* functionReturn = graph->getFunctionResult();
@@ -413,15 +430,14 @@ void DFGraphPass::processReturnInst(const Instruction &inst)
             Merge* mergeRet;
             if (functionReturn->getBlockType() == BlockType::Exit_Block) {
                 mergeRet = new Merge(nullptr, typeSize);
-                functionReturn->setConnectedPort(make_pair(mergeRet, 
-                    mergeRet->addDataInPort()));
-                graph->addBlockToBB(functionReturn->getParentBB()->getName(), mergeRet);
+                functionReturn->setConnectedPort(mergeRet, mergeRet->addDataInPort());
+                // graph->addBlockToBB(functionReturn->getParentBB()->getName(), mergeRet);
                 graph->setFunctionResult(mergeRet);
             }
             else {
                 mergeRet = (Merge*)functionReturn;
             }
-            retBlock->setConnectedPort(make_pair(mergeRet, mergeRet->addDataInPort()));
+            retBlock->setConnectedPort(mergeRet, mergeRet->addDataInPort());
         }
         else {
             graph->setFunctionResult(retBlock);
@@ -431,7 +447,7 @@ void DFGraphPass::processReturnInst(const Instruction &inst)
 
 
 
-void connectAux(pair <Block*, int> origin, pair <Block*, int> end) {
+void changeConnection(pair <Block*, int> origin, pair <Block*, int> newEnd) {
     Block* originBlock = origin.first;
     if (originBlock->getBlockType() != BlockType::Fork_Block) {
         if (originBlock->getBlockType() == BlockType::Branch_Block) {
@@ -446,15 +462,15 @@ void connectAux(pair <Block*, int> origin, pair <Block*, int> end) {
         pair <Block*, int> connection = originBlock->getConnectedPort();
         if (connection.first->getBlockType() == BlockType::Fork_Block) {
             Fork* originFork = (Fork*)connection.first;
-            originFork->setOutPort(0, end);
+            originFork->setOutPort(0, newEnd);
         }
         else {
-            originBlock->setConnectedPort(end);
+            originBlock->setConnectedPort(newEnd);
         }
     }
     else {
         Fork* originFork = (Fork*)originBlock;
-        originFork->setOutPort(origin.second, end);
+        originFork->setOutPort(origin.second, newEnd);
     }
     
 }
@@ -477,8 +493,9 @@ void DFGraphPass::processCallInst(const Instruction& inst) {
     funcGraph.addFunctionCallBlock(callBlock);
     if (timesCalled == 0) {
         blockVar = controlBlocks[BBName];
-        connectBlocks(blockVar, make_pair(callBlock, 0));
-        callBlock->setInputContPort(make_pair(blockVar, blockVar->getConnectedPortIndex()));
+        connectBlocks(blockVar, callBlock, 0);
+        blockVar = controlBlocks[BBName];
+        callBlock->setInputContPort(blockVar, blockVar->getConnectedPortIndex());
         for (unsigned int i = 0; i < funcGraph.getNumArguments(); ++i) {
             value = callInst.getArgOperand(i);
             if (isa<llvm::Constant>(value)) {
@@ -488,8 +505,9 @@ void DFGraphPass::processCallInst(const Instruction& inst) {
             else {
                 blockVar = varsMapping[BBName][value];
             }
-            connectBlocks(blockVar, make_pair(callBlock, i+1), value);
-            callBlock->addInputArgPort(make_pair(blockVar, blockVar->getConnectedPortIndex()));
+            connectBlocks(blockVar, callBlock, i+1, value);
+            if (!isa<llvm::Constant>(value)) blockVar = varsMapping[BBName][value];
+            callBlock->addInputArgPort(blockVar, blockVar->getConnectedPortIndex());
         }
         if (!callInst.getType()->isVoidTy()) {
             varsMapping[BBName][&inst] = callBlock;
@@ -497,50 +515,44 @@ void DFGraphPass::processCallInst(const Instruction& inst) {
     }
     else {
         if (timesCalled == 1) {
-            FunctionCall* callBlock = funcGraph.getFunctionCallBlock(timesCalled - 1);
-            Merge* wrapControlIn = new Merge(nullptr, 0);
+            FunctionCall* prevCallBlock = funcGraph.getFunctionCallBlock(0);
             Fork* wrapForkControl = new Fork(nullptr, 0);
-            connectAux(callBlock->getInputContPort(), make_pair(wrapForkControl, 0));
+            changeConnection(prevCallBlock->getInputContPort(), make_pair(wrapForkControl, 0));
             funcGraph.addWrapperControlFork(wrapForkControl);
-            wrapForkControl->setConnectedPort(make_pair(wrapControlIn, 
-                wrapControlIn->addDataInPort()));
+            Merge* wrapControlIn = new Merge(nullptr, 0);
+            wrapForkControl->setConnectedPort(wrapControlIn, wrapControlIn->addDataInPort());
             funcGraph.setWrapperControlIn(wrapControlIn);
             unsigned int typeSize;
             Merge* wrapParam;
             for (unsigned int i = 0; i < funcGraph.getNumArguments(); ++i) {
                 typeSize = DL.getTypeSizeInBits(callInst.getArgOperand(i)->getType());
                 wrapParam = new Merge(nullptr, typeSize);
-                connectAux(callBlock->getInputArgPort(i), 
-                    make_pair(wrapParam, wrapParam->addDataInPort(0)));
+                changeConnection(prevCallBlock->getInputArgPort(i), 
+                    make_pair(wrapParam, wrapParam->addDataInPort()));
                 funcGraph.addWrapperCallParam(wrapParam);
             }
             Demux* wrapControlOut = new Demux(nullptr, 0);
-            wrapForkControl->setConnectedPort(make_pair(wrapControlOut,
-                wrapControlOut->addControlInPort()));
+            wrapForkControl->setConnectedPort(wrapControlOut, wrapControlOut->addControlInPort());
             funcGraph.setWrapperControlOut(wrapControlOut);
             if (!callInst.getType()->isVoidTy()) {
                 typeSize = DL.getTypeAllocSize(callInst.getType());
                 Demux* wrapResult = new Demux(nullptr, typeSize);
-                wrapForkControl->setConnectedPort(make_pair(wrapResult,
-                    wrapResult->addControlInPort()));
+                wrapForkControl->setConnectedPort(wrapResult, wrapResult->addControlInPort());
                 funcGraph.setWrapperResult(wrapResult);
             }
         }
-        Merge* wrapControlIn = (Merge*)funcGraph.getWrapperControlIn();
+        Merge* wrapControlIn = funcGraph.getWrapperControlIn();
         Fork* wrapForkControl = new Fork(nullptr, 0);
         funcGraph.addWrapperControlFork(wrapForkControl);
         blockVar = controlBlocks[BBName];
-        connectBlocks(blockVar, make_pair(wrapForkControl, 0));
-        wrapForkControl->setConnectedPort(make_pair(wrapControlIn, 
-            wrapControlIn->addDataInPort()));
+        connectBlocks(blockVar, wrapForkControl, 0);
+        wrapForkControl->setConnectedPort(wrapControlIn, wrapControlIn->addDataInPort());
         Demux* wrapControlOut = funcGraph.getWrapperControlOut();
-        wrapForkControl->setConnectedPort(make_pair(wrapControlOut, 
-            wrapControlOut->addControlInPort()));
+        wrapForkControl->setConnectedPort(wrapControlOut, wrapControlOut->addControlInPort());
         Merge* wrapParam;
         if (!callInst.getType()->isVoidTy()) {
             Demux* wrapResult = funcGraph.getWrapperResult();
-            wrapForkControl->setConnectedPort(make_pair(wrapResult, 
-                wrapResult->addControlInPort()));
+            wrapForkControl->setConnectedPort(wrapResult, wrapResult->addControlInPort());
             varsMapping[BBName][&inst] = callBlock;
         }
         for (unsigned int i = 0; i < funcGraph.getNumArguments(); ++i) {
@@ -552,19 +564,16 @@ void DFGraphPass::processCallInst(const Instruction& inst) {
             else {
                 blockVar = varsMapping[BBName][callInst.getArgOperand(i)];
             }
-            wrapParam = (Merge*)funcGraph.getWrapperCallParam(i);
-            connectBlocks(blockVar, make_pair(wrapParam, wrapParam->addDataInPort()));
+            wrapParam = funcGraph.getWrapperCallParam(i);
+            connectBlocks(blockVar, wrapParam, wrapParam->addDataInPort());
         }
     }
     if (controlSynch == nullptr) {
         controlSynch = new DFGraphComp::Operator(OpType::Synchronization, BB, 0);
     }
-    callBlock->setConnectedPortControl(make_pair(controlSynch, controlSynch->addInputPort(0)));
+    callBlock->setConnectedPortControl(controlSynch, controlSynch->addInputPort(0));
     funcGraph.increaseTimesCalled();
 }
-
-
-
 
 
 
@@ -573,37 +582,35 @@ void DFGraphPass::connectFunctionCall(Function& F) {
     FunctionCall* callBlock;
     if (funcGraph.getTimesCalled() == 1) {
         callBlock = funcGraph.getFunctionCallBlock(0);
-        pair <Block*, int> inputControlIn = callBlock->getInputContPort();
         Entry* funcControlIn = funcGraph.getFunctionControlIn();
-        connectAux(inputControlIn, make_pair(funcControlIn, 0));
+        changeConnection(callBlock->getInputContPort(), make_pair(funcControlIn, 0));
         pair <Block*, int> inputParam;
         DFGraphComp::Argument* funcArg;
         for (unsigned int i = 0; i < funcGraph.getNumArguments(); ++i) {
             inputParam = callBlock->getInputArgPort(i);
             funcArg = funcGraph.getArgument(i);
-            connectAux(inputParam, make_pair(funcArg, 0));
+            changeConnection(inputParam, make_pair(funcArg, 0));
         }
         Block* funcResult = funcGraph.getFunctionResult();
         if (funcResult != nullptr) {
             funcResult->setConnectedPort(callBlock->getConnecDataPort());
         }
-        Exit* funcControlOut = funcGraph.getFunctionControlOut();
+        Block* funcControlOut = funcGraph.getFunctionControlOut();
         funcControlOut->setConnectedPort(callBlock->getConnecControlPort());
-        
     }
     else if (funcGraph.getTimesCalled() > 1) {
         Merge* wrapControlIn = (Merge*)funcGraph.getWrapperControlIn();
         Entry* funcControlIn = funcGraph.getFunctionControlIn();
-        wrapControlIn->setConnectedPort(make_pair(funcControlIn, 0));
+        wrapControlIn->setConnectedPort(funcControlIn, 0);
         for (unsigned int i = 0; i < funcGraph.getNumArguments(); ++i) {
             Merge* wrapParam = (Merge*)funcGraph.getWrapperCallParam(i);
             DFGraphComp::Argument* funcArg = funcGraph.getArgument(i);
-            wrapParam->setConnectedPort(make_pair(funcArg, 0));
+            wrapParam->setConnectedPort(funcArg, 0);
         }
         Block* funcResult = funcGraph.getFunctionResult();
         if (funcResult != nullptr) {
             Demux* wrapResult = funcGraph.getWrapperResult();
-            funcResult->setConnectedPort(make_pair(wrapResult, 0));
+            funcResult->setConnectedPort(wrapResult, 0);
             for (unsigned int i = 0; i < funcGraph.getTimesCalled(); ++i) {
                 callBlock = funcGraph.getFunctionCallBlock(i);
                 wrapResult->addDataOutPort();
@@ -612,7 +619,7 @@ void DFGraphPass::connectFunctionCall(Function& F) {
         }
         Block* funcControlOut = funcGraph.getFunctionControlOut();
         Demux* wrapControlOut = funcGraph.getWrapperControlOut();
-        funcControlOut->setConnectedPort(make_pair(wrapControlOut, 0));
+        funcControlOut->setConnectedPort(wrapControlOut, 0);
         for (unsigned int i = 0; i < funcGraph.getTimesCalled(); ++i) {
             callBlock = funcGraph.getFunctionCallBlock(i);
             wrapControlOut->addDataOutPort();
@@ -640,8 +647,8 @@ void DFGraphPass::processBranchInst(const Instruction &inst)
             value = *it;
             typeSize = DL.getTypeSizeInBits(value->getType());
             branch = new Branch(BB, typeSize);
-            processOperator(value, make_pair(branch, 0), BB);
-            processOperator(condition, make_pair(branch, 1), BB);
+            processOperator(value, branch, 0, BB);
+            processOperator(condition, branch, 1, BB);
             graph->addBlockToBB(branch);
             varsMapping[BBName][value] = branch;
         }
@@ -651,17 +658,17 @@ void DFGraphPass::processBranchInst(const Instruction &inst)
 
 
 void DFGraphPass::processOperator(const Value* operand, 
-    pair<Block*, int> connection, const BasicBlock* BB) 
+    Block* connecBlock, int connecPort, const BasicBlock* BB) 
 {
     StringRef BBName = BB->getName();
     if (isa<llvm::Constant>(operand)) {
         ConstantInterf* constant = createConstant(operand, BB);
-        constant->setConnectedPort(connection);
+        constant->setConnectedPort(connecBlock, connecPort);
         graph->addBlockToBB(constant);
     }
     else if (isa<Instruction>(operand) || isa<llvm::Argument>(operand)) {
         Block* block = varsMapping[BBName][operand];
-        connectBlocks(block, connection, operand);
+        connectBlocks(block, connecBlock, connecPort, operand);
     }
 }
 
@@ -732,7 +739,7 @@ void DFGraphPass::processPhiConstants(const BasicBlock* BB) {
         else {
             phiBlock = varsMerges[phiBB][phi];
         }
-        cst->setConnectedPort(make_pair(phiBlock, phiBlock->addDataInPort()));
+        cst->setConnectedPort(phiBlock, phiBlock->addDataInPort());
     }
 }
 
@@ -766,26 +773,39 @@ void DFGraphPass::processBBExitControl(const BasicBlock* BB) {
     Block* controlExit;
     Block* control = controlBlocks[BBName];
     if (controlSynch != nullptr) {
-        connectBlocks(control, make_pair(controlSynch, controlSynch->addInputPort(0)));
+        connectBlocks(control, controlSynch, controlSynch->addInputPort(0));
         graph->addControlBlockToBB(controlSynch);
         control = controlSynch;
     }
     if (succ_empty(BB)) {
         Exit* exitBlock = new Exit(BB);
-        connectBlocks(control, make_pair(exitBlock, 0));
+        connectBlocks(control, exitBlock, 0);
         graph->addControlBlockToBB(exitBlock);
         controlExit = exitBlock;
-        graph->setFunctionControlOut(exitBlock);
+        Block* controlOut = graph->getFunctionControlOut();
+        if (controlOut != nullptr) {
+            Merge* mergeControlOut;
+            if (controlOut->getBlockType() == BlockType::Exit_Block) {
+                mergeControlOut = new Merge(nullptr, 0);
+                controlOut->setConnectedPort(mergeControlOut, mergeControlOut->addDataInPort());
+                graph->setFunctionControlOut(mergeControlOut);
+            }
+            else {
+                mergeControlOut = (Merge*)controlOut;
+            }
+            controlExit->setConnectedPort(mergeControlOut, mergeControlOut->addDataInPort());
+        }
+        else {
+            graph->setFunctionControlOut(controlExit);
+        }
     }
     else if (succ_size(BB) > 1) {
         const BranchInst* branchInst = cast<BranchInst>(BB->getTerminator());
         Branch* branch = new Branch(BB, 0);
         controlExit = branch;
-        processOperator(branchInst->getCondition(), make_pair(branch, 
-            1), BB);
-        connectBlocks(control, make_pair(branch, 0));
+        processOperator(branchInst->getCondition(), branch, 1, BB);
+        connectBlocks(control, branch, 0);
         graph->addControlBlockToBB(branch);
-    
     }
     else controlExit = controlSynch;
     if (controlExit != nullptr) controlBlocks[BBName] = controlExit;
@@ -793,25 +813,25 @@ void DFGraphPass::processBBExitControl(const BasicBlock* BB) {
 
 
 
-void DFGraphPass::connectOrphanBlock(pair <Block*, int> connection) 
+void DFGraphPass::connectOrphanBlock(Block* connecBlock, int connecPort) 
 {
-    const BasicBlock* parentBB = connection.first->getParentBB();
+    const BasicBlock* parentBB = connecBlock->getParentBB();
     StringRef parentBBName = parentBB->getName();
     Block* control = controlBlocks[parentBBName];
-    connectBlocks(control, connection);
+    connectBlocks(control, connecBlock, connecPort);
 }
 
 
 
-void DFGraphPass::connectBlocks(Block* block, pair<Block*, int> connection,
-    const Value* value) 
+void DFGraphPass::connectBlocks(Block* block, Block* connecBlock,
+        int connecPort, const Value* value) 
 {
     if (block->getBlockType() == BlockType::Branch_Block) {
         const BasicBlock* oldBB = block->getParentBB();
         Branch* branch = (Branch*)block;
         const BranchInst* branchInst = cast<BranchInst>(oldBB->getTerminator());
         const BasicBlock* BBFalse = branchInst->getSuccessor(1);
-        if (connection.first->getBlockType() != BlockType::Merge_Block) {
+        if (connecBlock->getBlockType() != BlockType::Merge_Block) {
             if (varsMapping.find(BBFalse->getName()) == varsMapping.end()) {
                 branch->setCurrentPort(true);
             }
@@ -819,20 +839,20 @@ void DFGraphPass::connectBlocks(Block* block, pair<Block*, int> connection,
         }
     }
     if (block->connectionAvailable()) {
-        block->setConnectedPort(connection);
+        block->setConnectedPort(connecBlock, connecPort);
     }
     else {
         pair <Block*, int> prevConnection = block->getConnectedPort();
         const BasicBlock* prevBB = prevConnection.first->getParentBB();
-        const BasicBlock* currBB = connection.first->getParentBB();
+        const BasicBlock* currBB = connecBlock->getParentBB();
         Fork* fork;
         int portWidth = 0;
         if (value != nullptr) portWidth = DL.getTypeSizeInBits(value->getType());
         if (prevBB == nullptr) fork = new Fork(currBB, portWidth);
         else fork = new Fork(prevBB, portWidth);
         fork->setConnectedPort(prevConnection);
-        fork->setConnectedPort(connection);
-        block->setConnectedPort(make_pair(fork, 0));
+        fork->setConnectedPort(connecBlock, connecPort);
+        block->setConnectedPort(fork, 0);
         if (value != nullptr) {
             if (prevBB != nullptr) {
                 if (prevBB == currBB) graph->addBlockToBB(fork);
@@ -880,7 +900,7 @@ void DFGraphPass::connectMerge(Merge* merge, Block* block,
         }
         else assert(0 && "Cannot find branch output to Merge");
     }
-    connectBlocks(block, make_pair(merge, merge->addDataInPort()), value);
+    connectBlocks(block, merge, merge->addDataInPort(), value);
 }
 
 
@@ -924,7 +944,8 @@ void DFGraphPass::connectMerges() {
 
 
 
-void DFGraphPass::connectControlMerges() {
+void DFGraphPass::connectControlMerges() 
+{
     const BasicBlock* BB;
     const BasicBlock* predBB;
     Merge* merge;
@@ -944,10 +965,11 @@ void DFGraphPass::connectControlMerges() {
 
 
 
-ConstantInterf* DFGraphPass::createConstant(const Value* operand, const BasicBlock* BB) {
+ConstantInterf* DFGraphPass::createConstant(const Value* operand, const BasicBlock* BB) 
+{
     ConstantInterf* constant;
     Type* type = operand->getType();
-    if (type->isIntegerTy()) { //TODO: More types (vector and struct types)
+    if (type->isIntegerTy()) {
         const ConstantInt* cst = cast<ConstantInt>(operand);
         if (cst->getBitWidth() <= 32) {
             constant = new DFGraphComp::Constant<int>((int)cst->getSExtValue(), BB);
@@ -957,7 +979,7 @@ ConstantInterf* DFGraphPass::createConstant(const Value* operand, const BasicBlo
         }
     }
     else if (type->isPointerTy()) {
-        constant = new DFGraphComp::Constant<void*>(nullptr, BB);
+        constant = new DFGraphComp::Constant<string>("nullptr", BB);
     }
     else if (type->isFloatTy()) {
         const ConstantFP* cst = cast<ConstantFP>(operand);
@@ -967,12 +989,16 @@ ConstantInterf* DFGraphPass::createConstant(const Value* operand, const BasicBlo
         const ConstantFP* cst = cast<ConstantFP>(operand);
         constant = new DFGraphComp::Constant<double>(cst->getValueAPF().convertToFloat(), BB);
     }
-    connectOrphanBlock(make_pair(constant, 0));
+    else {
+        assert(0 && "Constant type not supported");
+    }
+    connectOrphanBlock(constant, 0);
     return constant;
 }
 
 
-void DFGraphPass::printGraph(Module& M) {
+void DFGraphPass::printGraph(Module& M) 
+{
     file << "digraph \"DataFlow Graph for '" << M.getModuleIdentifier() << "' file\" {" << endl;
     file << "\tlabel=\"DataFlow Graph for '" << M.getModuleIdentifier() << "' file\";" << endl;
     for (Module::iterator it = M.begin(); it != M.end(); ++it) {

@@ -48,6 +48,8 @@ private:
 
     void clearStructures();
 
+    void processUnaryInst(const Instruction &inst);
+
     void processBinaryInst(const Instruction &inst);
     
     void processPhiInst(const Instruction &inst);
@@ -68,18 +70,18 @@ private:
 
     void processCallInst(const Instruction& inst);
 
-    void processOperator(const Value* operand, pair <Block*, int> connection,
-        const BasicBlock* BB);
+    void processOperator(const Value* operand, Block* connecBlock,
+        int connecPort, const BasicBlock* BB);
 
     void processLiveIn(const BasicBlock* BB);
     void processPhiConstants(const BasicBlock* BB);
 
     void processBBEntryControl(const BasicBlock* BB); 
-    void connectOrphanBlock(pair <Block*, int> connection);
+    void connectOrphanBlock(Block* connecBlock, int connecPort);
     void processBBExitControl(const BasicBlock* BB);
 
-    void connectBlocks(Block* block, pair<Block*, int> connection,
-        const Value* value = nullptr);
+    void connectBlocks(Block* block, Block* connecBlock,
+        int connecPort, const Value* value = nullptr);
 
 
     void connectMerge(Merge* merge, Block* block,
@@ -87,9 +89,7 @@ private:
     void connectMerges();
     void connectControlMerges();
 
-
     void connectFunctionCall(Function& F);
-
 
     ConstantInterf* createConstant(const Value* operand, const BasicBlock* BB);
 

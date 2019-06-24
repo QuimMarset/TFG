@@ -31,6 +31,7 @@ public:
 
     virtual pair <Block*, int> getConnectedPort() = 0;
     virtual void setConnectedPort(pair <Block*, int> connection) = 0;
+    virtual void setConnectedPort(Block* block, int portIdx) = 0;
     virtual bool connectionAvailable() = 0;
     virtual unsigned int getConnectedPortIndex() = 0;
 
@@ -76,6 +77,7 @@ public:
     void setDataOutPortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -117,6 +119,7 @@ public:
     void setDataOutPortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -147,6 +150,7 @@ public:
     void setDataPortDelay(unsigned int delay);
  
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -244,6 +248,7 @@ public:
     void setDataOutPortDelay(unsigned int index, unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -279,6 +284,7 @@ public:
     void setDataOutPortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -312,6 +318,7 @@ public:
     void setDataOutPortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -347,6 +354,7 @@ public:
     void setDataFalsePortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -391,6 +399,7 @@ public:
     void setCurrentConnectedPort(int current);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -418,6 +427,7 @@ public:
     void setOutPortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -478,6 +488,7 @@ public:
     void setOutPortDelay(unsigned int delay);
 
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
@@ -537,18 +548,19 @@ public:
     FunctionCall(const BasicBlock* parentBB = nullptr);
     ~FunctionCall();
 
-    void setConnectedPortResult(pair <Block*, int> connection);
-    void setConnectedPortControl(pair <Block*, int> connection);
+    void setConnectedPortResult(Block* block, int idxPort);
+    void setConnectedPortControl(Block* block, int idxPort);
     
     pair <Block*, int> getConnectedPort() override;
+    void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
     unsigned int getConnectedPortIndex() override;
 
-    void addInputArgPort(pair <Block*, int> connection);
+    void addInputArgPort(Block* block, int idxPort);
     pair <Block*, int> getInputArgPort(unsigned int index);
 
-    void setInputContPort(pair <Block*, int> connection);
+    void setInputContPort(Block* block, int idxPort);
     pair <Block*, int> getInputContPort();
 
     pair <Block*, int> getConnecDataPort();

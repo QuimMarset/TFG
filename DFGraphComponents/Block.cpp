@@ -123,6 +123,10 @@ pair <Block*, int> Operator::getConnectedPort() {
     return connectedPort;
 }
 
+void Operator::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
+}
+
 void Operator::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
@@ -185,17 +189,18 @@ void Operator::printBlock(ostream& file) {
 }
 
 void Operator::printChannels(ostream& file) {
-    assert(opType != OpType::Store and connectedPort.first != nullptr and 
-        connectedPort.second != -1);
-    file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
+    if (opType != OpType::Store) {
+        assert(connectedPort.first != nullptr and connectedPort.second != -1);
+        file << blockName << " -> " << connectedPort.first->getBlockName() << " [from = " <<
         dataOut.getName() << ", to = " << 
         connectedPort.first->getInputPort(connectedPort.second).getName();
-    unsigned int width = dataOut.getWidth();
-    file << ", color = ";
-    if (width == 0) file << "red";
-    else if (width == 1) file << "magenta";
-    else file << "blue";
-    file << "];" << endl;
+        unsigned int width = dataOut.getWidth();
+        file << ", color = ";
+        if (width == 0) file << "red";
+        else if (width == 1) file << "magenta";
+        else file << "blue";
+        file << "];" << endl;
+    }
 }
 
 
@@ -253,6 +258,10 @@ void Buffer::setDataOutPortDelay(unsigned int delay) {
 
 pair <Block*, int> Buffer::getConnectedPort() {
     return connectedPort;
+}
+
+void Buffer::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
 }
 
 void Buffer::setConnectedPort(pair <Block*, int> connection) {
@@ -353,6 +362,10 @@ pair <Block*, int> ConstantInterf::getConnectedPort() {
     return connectedPort;
 }
 
+void ConstantInterf::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
+}
+
 void ConstantInterf::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
@@ -424,6 +437,14 @@ pair <Block*, int> Fork::getConnectedPort() {
     return connectedPorts.back();
 }
 
+void Fork::setConnectedPort(Block* block, int idxPort) {
+    int width = dataIn.getWidth();
+    int delay = dataIn.getDelay();
+    dataOut.push_back(Port("out" + to_string(dataOut.size()),
+        width, Port::Base, delay));
+    connectedPorts.push_back(make_pair(block, idxPort));
+}
+
 void Fork::setConnectedPort(pair <Block*, int> connection) {
     int width = dataIn.getWidth();
     int delay = dataIn.getDelay();
@@ -484,6 +505,7 @@ void Fork::printChannels(ostream& file) {
     unsigned int width = dataIn.getWidth();
     for (unsigned int i = 0; i < dataOut.size(); ++i) {
         assert(connectedPorts[i].first != nullptr and connectedPorts[i].second != -1);
+        errs() << "Fork connected to: " << connectedPorts[i].first->getBlockName() << '\n';
         file << blockName << " -> " << connectedPorts[i].first->getBlockName() << " [from = " <<
             dataOut[i].getName() << ", to = " << 
             connectedPorts[i].first->getInputPort(connectedPorts[i].second).getName();
@@ -541,6 +563,10 @@ void Merge::setDataOutPortDelay(unsigned int delay) {
 
 pair <Block*, int> Merge::getConnectedPort() {
     return connectedPort;
+}
+
+void Merge::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
 }
 
 void Merge::setConnectedPort(pair <Block*, int> connection) {
@@ -657,6 +683,10 @@ void Select::setDataOutPortDelay(unsigned int delay) {
 
 pair <Block*, int> Select::getConnectedPort() {
     return connectedPort;
+}
+
+void Select::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
 }
 
 void Select::setConnectedPort(pair <Block*, int> connection) {
@@ -789,6 +819,11 @@ void Branch::setDataFalsePortDelay(unsigned int delay) {
 pair <Block*, int> Branch::getConnectedPort() {
     if (currentPort) return connectedPortTrue;
     return connectedPortFalse;
+}
+
+void Branch::setConnectedPort(Block* block, int idxPort) {
+    if (currentPort) connectedPortTrue = make_pair(block, idxPort);
+    else connectedPortFalse = make_pair(block, idxPort);
 }
 
 void Branch::setConnectedPort(pair <Block*, int> connection) {
@@ -958,6 +993,16 @@ pair <Block*, int> Demux::getConnectedPort() {
     }
 }
 
+void Demux::setConnectedPort(Block* block, int idxPort) {
+    if (currentConnected > -1) {
+        connectedPorts[currentConnected] = make_pair(block, idxPort);
+    }
+    else {
+        assert(connectedPorts.size() > 0);
+        connectedPorts.back() = make_pair(block, idxPort);
+    }
+}
+
 void Demux::setConnectedPort(pair <Block*, int> connection) {
     if (currentConnected > -1) {
         connectedPorts[currentConnected] = connection;
@@ -1084,6 +1129,10 @@ void EntryInterf::setOutPortDelay(unsigned int delay) {
 
 pair <Block*, int> EntryInterf::getConnectedPort() {
     return connectedPort;
+}
+
+void EntryInterf::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
 }
 
 void EntryInterf::setConnectedPort(pair <Block*, int> connection) {
@@ -1215,6 +1264,10 @@ pair <Block*, int> ExitInterf::getConnectedPort()  {
     return connectedPort;
 }
 
+void ExitInterf::setConnectedPort(Block* block, int idxPort) {
+    connectedPort = make_pair(block, idxPort);
+}
+
 void ExitInterf::setConnectedPort(pair <Block*, int> connection) {
     connectedPort = connection;
 }
@@ -1330,16 +1383,20 @@ FunctionCall::FunctionCall(const BasicBlock* parentBB) :
 
 FunctionCall::~FunctionCall() {}
 
-void FunctionCall::setConnectedPortResult(pair <Block*, int> connection) {
-    connectedResultPort = connection;
+void FunctionCall::setConnectedPortResult(Block* block, int idxPort) {
+    connectedResultPort = make_pair(block, idxPort);
 }
 
-void FunctionCall::setConnectedPortControl(pair <Block*, int> connection) {
-    connectedControlPort = connection;
+void FunctionCall::setConnectedPortControl(Block* block, int idxPort) {
+    connectedControlPort = make_pair(block, idxPort);
 }
 
 pair <Block*, int> FunctionCall::getConnectedPort() {
     return connectedResultPort;
+}
+
+void FunctionCall::setConnectedPort(Block* block, int idxPort) {
+    connectedResultPort = make_pair(block, idxPort);
 }
 
 void FunctionCall::setConnectedPort(pair <Block*, int> connection) {
@@ -1352,19 +1409,19 @@ bool FunctionCall::connectionAvailable() {
 }
 
 unsigned int FunctionCall::getConnectedPortIndex() {
-    assert(0);
+    assert(0 && "Not should be called");
 }
 
 const Port& FunctionCall::getInputPort(unsigned int index) {
-    assert(0);
+    assert(0 && "Not should be called");
 }
 
-void FunctionCall::addInputArgPort(pair <Block*, int> connection) {
-    inputArgumentPorts.push_back(connection);
+void FunctionCall::addInputArgPort(Block* block, int idxPort) {
+    inputArgumentPorts.push_back(make_pair(block, idxPort));
 }
 
-void FunctionCall::setInputContPort(pair <Block*, int> connection) {
-    inputControlPort = connection;
+void FunctionCall::setInputContPort(Block* block, int idxPort) {
+    inputControlPort = make_pair(block, idxPort);
 }
 
 pair <Block*, int> FunctionCall::getInputArgPort(unsigned int index) {
@@ -1386,11 +1443,11 @@ pair <Block*, int> FunctionCall::getConnecControlPort() {
 }
 
 void FunctionCall::printBlock(ostream &file) {
-    assert(0);
+    assert(0 && "Not should be called");
 }
 
 void FunctionCall::printChannels(ostream& file) {
-    assert(0);
+    assert(0 && "Not should be called");
 }
 
 

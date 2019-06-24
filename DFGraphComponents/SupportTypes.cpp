@@ -160,8 +160,8 @@ string getOpName(OpType op) {
         case Alloca:
             return "Alloca";
             break;
-        case Not:
-            return "Not";
+        case FNeg:
+            return "FNeg";
             break;
         case IntTrunc:
             return "IntTrunc";
@@ -322,8 +322,8 @@ ostream &operator << (ostream& out, OpType op) {
         case Alloca:
             out << "alloca";
             break;
-        case Not:
-            out << "not";
+        case FNeg:
+            out << "fneg";
             break;
         case IntTrunc:
             out << "inttrunc";

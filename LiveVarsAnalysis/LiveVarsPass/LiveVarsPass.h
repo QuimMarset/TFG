@@ -52,8 +52,6 @@ private:
 
     void printLiveVarsAnalysis(Function& F);
 
-    void setInputFileName(StringRef name);
-
     void setCurrentFunc(Function& F);
 
 };

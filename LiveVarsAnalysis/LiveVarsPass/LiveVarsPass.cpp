@@ -24,7 +24,8 @@ StringRef LiveVarsPass::getFuncName() {
 
 bool LiveVarsPass::runOnFunction(Function &F) {
     if (inputFileName.empty()) {
-        setInputFileName(F.getParent()->getModuleIdentifier());
+        inputFileName = F.getParent()->getModuleIdentifier();
+        inputFileName = inputFileName.substr(0, inputFileName.size()-3);
     }
     else { // Reset maps for other functions in the LLVM files
         liveInVars.clear(); 
@@ -134,7 +135,7 @@ bool LiveVarsPass::iterateBasicBlock(const BasicBlock &BB, const set<const Value
 
 void LiveVarsPass::printLiveVarsAnalysis(Function& F) {
     ofstream file;
-    file.open(inputFileName + "_" + F.getName().str() + "_LVA.txt");
+    file.open(inputFileName + "_" + F.getName().str() + "_LiveVariables.txt");
     StringRef BBName;
     for (Function::const_iterator bb_it = F.begin(); bb_it != F.end(); ++bb_it) {
         BBName = bb_it->getName();
@@ -153,14 +154,6 @@ void LiveVarsPass::printLiveVarsAnalysis(Function& F) {
         }
     }
     file.close();
-}
-
-
-void LiveVarsPass::setInputFileName(StringRef name) {
-    // Assuming .ll extension
-    string aux = name.str();
-    assert(aux.substr(aux.length()-3, 3) == ".ll");
-    inputFileName = aux.substr(0, aux.length()-3);
 }
 
 

@@ -65,7 +65,7 @@ enum OpType {
     // Unary
     Load,
     Alloca,
-    Not,
+    FNeg,
     IntTrunc,
     IntZExt,
     IntSExt,

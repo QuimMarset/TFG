@@ -70,10 +70,12 @@ void BBGraph::printBBNodes(ostream &file) {
 void BBGraph::printBBEdges(ostream& file) {
     file << "// " << BBName << endl;
     for (Block* block : blocks) {
+        errs() << block->getBlockName() << '\n';
         block->printChannels(file);
     }
     file << "// Control_" << BBName << "\"" << endl;
     for (Block* block : controlBlocks) {
+        errs() << block->getBlockName() << '\n';
         block->printChannels(file);
     }
 }
@@ -169,11 +171,11 @@ void FunctionGraph::setFunctionControlIn(Entry* block) {
     controlIn = block;
 }
 
-Exit* FunctionGraph::getFunctionControlOut() {
+Block* FunctionGraph::getFunctionControlOut() {
     return controlOut;
 }
 
-void FunctionGraph::setFunctionControlOut(Exit* block) {
+void FunctionGraph::setFunctionControlOut(Block* block) {
     controlOut = block;
 }
 
@@ -185,20 +187,20 @@ void FunctionGraph::increaseTimesCalled() {
     wrapper.timesCalled += 1;
 }
 
-void FunctionGraph::addWrapperCallParam(Block* block) {
+void FunctionGraph::addWrapperCallParam(Merge* block) {
     wrapper.paramsCall.push_back(block);
 }
 
-Block* FunctionGraph::getWrapperCallParam(unsigned int index) {
+Merge* FunctionGraph::getWrapperCallParam(unsigned int index) {
     assert(index < wrapper.paramsCall.size());
     return wrapper.paramsCall[index];
 }
 
-Block* FunctionGraph::getWrapperControlIn() {
+Merge* FunctionGraph::getWrapperControlIn() {
     return wrapper.controlIn;
 }
 
-void FunctionGraph::setWrapperControlIn(Block* block) {
+void FunctionGraph::setWrapperControlIn(Merge* block) {
     wrapper.controlIn = block;
 }
 

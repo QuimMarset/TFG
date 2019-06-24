@@ -80,17 +80,17 @@ public:
     Entry* getFunctionControlIn();
     void setFunctionControlIn(Entry* block);
     
-    Exit* getFunctionControlOut();
-    void setFunctionControlOut(Exit* block);
+    Block* getFunctionControlOut();
+    void setFunctionControlOut(Block* block);
 
     unsigned int getTimesCalled();
     void increaseTimesCalled();
 
-    void addWrapperCallParam(Block* block);
-    Block* getWrapperCallParam(unsigned int index);
+    void addWrapperCallParam(Merge* block);
+    Merge* getWrapperCallParam(unsigned int index);
 
-    Block* getWrapperControlIn();
-    void setWrapperControlIn(Block* block);
+    Merge* getWrapperControlIn();
+    void setWrapperControlIn(Merge* block);
 
     void addWrapperControlFork(Fork* block);
     Fork* getWrapperControlFork(unsigned int index);
@@ -125,14 +125,14 @@ private:
     vector <DFGraphComp::Argument*> arguments;
     Block* result;
     Entry* controlIn;
-    Exit* controlOut;
+    Block* controlOut;
 
     struct CallWrapper 
     {
         unsigned int timesCalled;
         vector <FunctionCall*> callBlocks;
-        vector <Block*> paramsCall;
-        Block* controlIn;
+        vector <Merge*> paramsCall;
+        Merge* controlIn;
         vector <Fork*> controlInForks;
         Demux* controlOut;
         Demux* result;
