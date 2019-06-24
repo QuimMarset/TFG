@@ -29,8 +29,12 @@ void BBGraph::addControlBlock(Block* block) {
     controlBlocks.push_back(block);
 }
 
-int BBGraph::getId() {
+unsigned int BBGraph::getId() {
     return id;
+}
+
+void BBGraph::setId(unsigned int id) {
+    this->id = id;
 }
 
 string BBGraph::getBBName() {
@@ -73,7 +77,7 @@ void BBGraph::printBBEdges(ostream& file) {
         errs() << block->getBlockName() << '\n';
         block->printChannels(file);
     }
-    file << "// Control_" << BBName << "\"" << endl;
+    file << "// Control_" << BBName << endl;
     for (Block* block : controlBlocks) {
         errs() << block->getBlockName() << '\n';
         block->printChannels(file);
@@ -134,12 +138,20 @@ void FunctionGraph::addControlBlockToBB(StringRef BBName, Block* block) {
     basicBlocks[BBName].addControlBlock(block);
 }
 
-int FunctionGraph::getBBId() {
+unsigned int FunctionGraph::getBBId() {
     return currentBB->getId();
 }
 
-int FunctionGraph::getBBId(StringRef BBName) {
+unsigned int FunctionGraph::getBBId(StringRef BBName) {
     return basicBlocks[BBName].getId();
+}
+
+void FunctionGraph::setBBId(unsigned int id) {
+    currentBB->setId(id);
+}
+
+void FunctionGraph::setBBId(StringRef BBName, unsigned int id) {
+    basicBlocks[BBName].setId(id);
 }
 
 void FunctionGraph::addArgument(Argument* block) {

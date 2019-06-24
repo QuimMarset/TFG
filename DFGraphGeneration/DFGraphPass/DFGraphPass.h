@@ -34,7 +34,7 @@ private:
     DataLayout DL;
     ofstream file;
     map <StringRef, FunctionGraph> graphs;
-    int BBNumber;
+    unsigned int BBNumber;
 
     LiveVarsPass* liveness;
     FunctionGraph* graph;
@@ -48,11 +48,11 @@ private:
 
     void clearStructures();
 
-    void processUnaryInst(const Instruction &inst);
-
     void processBinaryInst(const Instruction &inst);
     
     void processPhiInst(const Instruction &inst);
+    
+    void processFNegInst(const Instruction &inst);
 
     void processAllocaInst(const Instruction &inst);
     
@@ -69,6 +69,11 @@ private:
     void processBranchInst(const Instruction &inst);
 
     void processCallInst(const Instruction& inst);
+
+    void processExtractElemInst(const Instruction& inst);
+    void processInsertElemInst(const Instruction& inst);
+    void processExtractValueInst(const Instruction& inst);
+    void processInsertValueInst(const Instruction& inst);
 
     void processOperator(const Value* operand, Block* connecBlock,
         int connecPort, const BasicBlock* BB);

@@ -27,7 +27,8 @@ public:
     void addBlock(Block *block);
     void addControlBlock(Block* block);
 
-    int getId();
+    unsigned int getId();
+    void setId(unsigned int id);
 
     string getBBName();
 
@@ -41,7 +42,7 @@ private:
     string BBName;
     vector <Block*> blocks;
     vector <Block*> controlBlocks;
-    int id;
+    unsigned int id;
 
 };
 
@@ -67,8 +68,10 @@ public:
     void addControlBlockToBB(Block* block);
     void addControlBlockToBB(StringRef BBName, Block* block);
 
-    int getBBId();
-    int getBBId(StringRef BBName);
+    unsigned int getBBId();
+    unsigned int getBBId(StringRef BBName);
+    void setBBId(unsigned int id);
+    void setBBId(StringRef BBName, unsigned int id);
 
     void addArgument(Argument* block);
     Argument* getArgument(unsigned int index);

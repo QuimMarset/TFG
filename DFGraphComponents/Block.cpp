@@ -136,7 +136,7 @@ bool Operator::connectionAvailable()  {
         connectedPort.second == -1);
 }
 
-unsigned int Operator::getConnectedPortIndex() {
+unsigned int Operator::getOutputPortIndex() {
     return 0;
 }
 
@@ -273,7 +273,7 @@ bool Buffer::connectionAvailable() {
         connectedPort.second == -1);
 }
 
-unsigned int Buffer::getConnectedPortIndex() {
+unsigned int Buffer::getOutputPortIndex() {
     return 0;
 }
 
@@ -375,7 +375,7 @@ bool ConstantInterf::connectionAvailable() {
         connectedPort.second == -1);
 }
 
-unsigned int ConstantInterf::getConnectedPortIndex() {
+unsigned int ConstantInterf::getOutputPortIndex() {
     return 0;
 }
 
@@ -457,7 +457,7 @@ bool Fork::connectionAvailable() {
     return true;    
 }
 
-unsigned int Fork::getConnectedPortIndex() {
+unsigned int Fork::getOutputPortIndex() {
     return connectedPorts.size()-1;
 }
 
@@ -578,7 +578,7 @@ bool Merge::connectionAvailable() {
         connectedPort.second == -1);
 }
 
-unsigned int Merge::getConnectedPortIndex() {
+unsigned int Merge::getOutputPortIndex() {
     return 0;
 }
 
@@ -698,7 +698,7 @@ bool Select::connectionAvailable() {
         connectedPort.second == -1);
 }
 
-unsigned int Select::getConnectedPortIndex() {
+unsigned int Select::getOutputPortIndex() {
     return 0;
 }
 
@@ -840,7 +840,7 @@ bool Branch::connectionAvailable() {
         connectedPortFalse.second == -1);
 }
 
-unsigned int Branch::getConnectedPortIndex() {
+unsigned int Branch::getOutputPortIndex() {
     if (currentPort) return 1;
     else return 0;
 }
@@ -1025,13 +1025,14 @@ bool Demux::connectionAvailable() {
     }
 }
 
-unsigned int Demux::getConnectedPortIndex() {
+unsigned int Demux::getOutputPortIndex() {
     if (currentConnected > -1)
         return currentConnected;
     else return connectedPorts.size()-1;
 }
 
 const Port& Demux::getInputPort(unsigned int index) {
+    assert(index <= control.size());
     if (index == 0) return dataIn;
     else return control[index-1];
 }
@@ -1114,7 +1115,7 @@ EntryInterf::EntryInterf() : Block() {}
 EntryInterf::EntryInterf(const string& blockName, const BasicBlock* parentBB,
     int portWidth, unsigned int blockDelay) : 
     Block(blockName, parentBB, BlockType::Entry_Block, blockDelay),
-    inPort("in", 0), outPort("out", portWidth), 
+    inPort("in", portWidth), outPort("out", portWidth), 
     connectedPort(nullptr, -1) {}
 
 EntryInterf::~EntryInterf() {}
@@ -1144,7 +1145,7 @@ bool EntryInterf::connectionAvailable() {
         connectedPort.second == -1);
 }
 
-unsigned int EntryInterf::getConnectedPortIndex() {
+unsigned int EntryInterf::getOutputPortIndex() {
     return 0;
 }
 
@@ -1247,7 +1248,7 @@ ExitInterf::ExitInterf() : Block() {}
 ExitInterf::ExitInterf(const string& blockName, const BasicBlock* parentBB,
     int portWidth, unsigned int blockDelay) :
     Block(blockName, parentBB, BlockType::Exit_Block, blockDelay),
-    inPort("in", portWidth), outPort("out", 0),
+    inPort("in", portWidth), outPort("out", portWidth),
     connectedPort(nullptr, -1) {}
 
 ExitInterf::~ExitInterf() {}
@@ -1277,7 +1278,7 @@ bool ExitInterf::connectionAvailable() {
         connectedPort.second == -1);
 }
 
-unsigned int ExitInterf::getConnectedPortIndex() {
+unsigned int ExitInterf::getOutputPortIndex() {
     return 0;
 }
 
@@ -1408,7 +1409,7 @@ bool FunctionCall::connectionAvailable() {
         connectedResultPort.second == -1);
 }
 
-unsigned int FunctionCall::getConnectedPortIndex() {
+unsigned int FunctionCall::getOutputPortIndex() {
     assert(0 && "Not should be called");
 }
 

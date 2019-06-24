@@ -33,7 +33,7 @@ public:
     virtual void setConnectedPort(pair <Block*, int> connection) = 0;
     virtual void setConnectedPort(Block* block, int portIdx) = 0;
     virtual bool connectionAvailable() = 0;
-    virtual unsigned int getConnectedPortIndex() = 0;
+    virtual unsigned int getOutputPortIndex() = 0;
 
     virtual const Port& getInputPort(unsigned int index) = 0;
 
@@ -80,7 +80,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void printBlock(ostream& file) override;
@@ -122,7 +122,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void printBlock(ostream &file) override;
@@ -153,7 +153,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void printChannels(ostream& file) override;
@@ -251,7 +251,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
     void setOutPort(unsigned int index, pair <Block*, int> connection);
 
@@ -287,7 +287,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void printBlock(ostream &file) override;
@@ -321,7 +321,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void printBlock(ostream &file) override;
@@ -357,7 +357,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void setCurrentPort(bool currentPort);
@@ -402,7 +402,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     void printBlock(ostream &file) override;
@@ -430,7 +430,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     virtual void printBlock(ostream &file) override;
@@ -491,7 +491,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
     const Port& getInputPort(unsigned int index) override;
 
     virtual void printBlock(ostream &file) override;
@@ -555,7 +555,7 @@ public:
     void setConnectedPort(Block* block, int idxPort) override;
     void setConnectedPort(pair <Block*, int> connection) override;
     bool connectionAvailable() override;
-    unsigned int getConnectedPortIndex() override;
+    unsigned int getOutputPortIndex() override;
 
     void addInputArgPort(Block* block, int idxPort);
     pair <Block*, int> getInputArgPort(unsigned int index);
