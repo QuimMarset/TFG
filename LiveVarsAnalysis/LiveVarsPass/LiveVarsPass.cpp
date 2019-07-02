@@ -42,7 +42,7 @@ bool LiveVarsPass::runOnFunction(Function &F) {
         defs.insert(make_pair(BBName, set<const Value*>()));
         computeUsesDefs(*bb_it, uses[BBName], defs[BBName]);
         if (&(*(bb_it->begin())) != bb_it->getFirstNonPHI()) {
-            computePhiVars(*bb_it);
+            processPhiUses(*bb_it);
         }
     }
     bool changes;
@@ -69,7 +69,7 @@ void LiveVarsPass::computeUsesDefs(const BasicBlock& BB, set<const Value*>& uses
         set<const Value*>& defs) 
 {
     for (BasicBlock::const_iterator inst_it = BB.begin(); inst_it != BB.end(); ++inst_it) {    
-        if (!isa<PHINode>(*inst_it)) {
+        if (!isa<PHINode>(*inst_it)) { // phis uses processed separately
             for (User::const_op_iterator op_it = inst_it->op_begin(); op_it != inst_it->op_end(); 
                 ++op_it) 
             {
@@ -87,7 +87,7 @@ void LiveVarsPass::computeUsesDefs(const BasicBlock& BB, set<const Value*>& uses
 }
 
 
-void LiveVarsPass::computePhiVars(const BasicBlock& BB) {
+void LiveVarsPass::processPhiUses(const BasicBlock& BB) {
     StringRef predBBName;
     for (BasicBlock::const_iterator it = BB.begin(); &(*it) != BB.getFirstNonPHI(); ++it) {
         const PHINode* phi = cast<PHINode> (it);
@@ -99,6 +99,8 @@ void LiveVarsPass::computePhiVars(const BasicBlock& BB) {
                 liveOutVars[predBBName].insert(value);
             }
             else if (isa<Constant>(value)) {
+                /* constants stored separately to place them when processing the corresponding BB,
+                    as they will appear in the phi instruction itself in the LLVM IR */
                 phiConstants[predBBName].insert(make_pair(phi, i));
             }
         }

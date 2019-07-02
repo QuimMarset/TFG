@@ -42,45 +42,47 @@ string BBGraph::getBBName() {
 }
 
 void BBGraph::freeBB() {
-    for (Block* block : blocks) {
-        delete block;
+    for (unsigned int i = 0; i < blocks.size(); ++i) {
+        delete blocks[i];
     }
-    for (Block* block : controlBlocks) {
-        delete block;
+    for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
+        delete controlBlocks[i];
     }
 }
 
 void BBGraph::printBBNodes(ostream &file) {
-    assert(BBName.length() > 0);
-    file << "\tsubgraph cluster_" << BBName << " { " << endl;
-    for (Block* block : blocks) {
-        file << "\t\t";
-        block->printBlock(file);
-    }
-    file << endl;
-    file << "\t\tsubgraph cluster_Control_" << BBName << "{" << endl;
-    for (Block* block : controlBlocks) {
+    assert(BBName.length() > 0 && "Needed name");
+    file << "\t\tsubgraph cluster_" << BBName << " {" << endl;
+    for (unsigned int i = 0; i < blocks.size(); ++i) {
         file << "\t\t\t";
-        block->printBlock(file);
+        blocks[i]->printBlock(file);
     }
-    file << "\t\t\tlabel = \"Control_" << BBName << "\"" << endl;
-    file << "\t\t\tcolor = red" << endl;
+    if (controlBlocks.size() > 0) {
+        file << "\t\t\tsubgraph cluster_Control_" << BBName << " {" << endl;
+        for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
+            file << "\t\t\t\t";
+            controlBlocks[i]->printBlock(file);
+        }
+        file << "\t\t\t\tlabel = \"Control_" << BBName << "\"" << endl;
+        file << "\t\t\t\tcolor = red" << endl;
+        file << "\t\t\t}" << endl;
+    }
+    file << "\t\t\tlabel = \"" << BBName << "\"" << endl;
     file << "\t\t}" << endl;
-
-    file << "\t\tlabel = \"" << BBName << "\"" << endl;
-    file << "\t}" << endl;
 }
 
 void BBGraph::printBBEdges(ostream& file) {
-    file << "// " << BBName << endl;
-    for (Block* block : blocks) {
-        errs() << block->getBlockName() << '\n';
-        block->printChannels(file);
+    for (unsigned int i = 0; i < blocks.size(); ++i) {
+        if (i == 0 and blocks[i]->getConnectedPort().first != nullptr)
+            file << "\t// " << BBName << endl;
+        blocks[i]->printChannels(file);
     }
-    file << "// Control_" << BBName << endl;
-    for (Block* block : controlBlocks) {
-        errs() << block->getBlockName() << '\n';
-        block->printChannels(file);
+    if (controlBlocks.size() > 0) {
+        for (unsigned int i = 0; i < controlBlocks.size(); ++i) {
+            if (i == 0 and controlBlocks[i]->getConnectedPort().first != nullptr)
+                file << "\t// Control_" << BBName << endl;
+            controlBlocks[i]->printChannels(file);
+        }
     }
 }
 
@@ -109,6 +111,8 @@ FunctionGraph::FunctionGraph(const string &functionName) {
 FunctionGraph::~FunctionGraph() {}
 
 void FunctionGraph::addBasicBlock(StringRef BBName, int id) {
+    /* Stored a name like BB0 or BB1 because some names LLVM creates are
+        incompatible with what DOT permits in the creation of a subgraph */
     basicBlocks[BBName] = BBGraph("BB" + to_string(basicBlocks.size()), id);
     currentBB = &basicBlocks[BBName];
 }
@@ -118,7 +122,7 @@ bool FunctionGraph::existsBB(StringRef BBName) {
 }
 
 void FunctionGraph::setCurrentBB(StringRef BBName) {
-    assert(basicBlocks.find(BBName) != basicBlocks.end());
+    assert(basicBlocks.find(BBName) != basicBlocks.end() && "BB not found");
     currentBB = &basicBlocks[BBName];
 }
 
@@ -159,7 +163,7 @@ void FunctionGraph::addArgument(Argument* block) {
 }
 
 Argument* FunctionGraph::getArgument(unsigned int index) {
-    assert(index < arguments.size());
+    assert(index < arguments.size() && "Wrong argument");
     return arguments[index];
 }
 
@@ -199,13 +203,13 @@ void FunctionGraph::increaseTimesCalled() {
     wrapper.timesCalled += 1;
 }
 
-void FunctionGraph::addWrapperCallParam(Merge* block) {
-    wrapper.paramsCall.push_back(block);
+void FunctionGraph::addWrapperCallArg(Merge* block) {
+    wrapper.argsCall.push_back(block);
 }
 
-Merge* FunctionGraph::getWrapperCallParam(unsigned int index) {
-    assert(index < wrapper.paramsCall.size());
-    return wrapper.paramsCall[index];
+Merge* FunctionGraph::getWrapperCallArg(unsigned int index) {
+    assert(index < wrapper.argsCall.size() && "Wrong wrapper parameter");
+    return wrapper.argsCall[index];
 }
 
 Merge* FunctionGraph::getWrapperControlIn() {
@@ -221,7 +225,7 @@ void FunctionGraph::addWrapperControlFork(Fork* block) {
 }
 
 Fork* FunctionGraph::getWrapperControlFork(unsigned int index) {
-    assert(index < wrapper.controlInForks.size());
+    assert(index < wrapper.controlInForks.size() && "Wrong wrapper fork");
     return wrapper.controlInForks[index];
 }
 
@@ -242,7 +246,7 @@ void FunctionGraph::setWrapperResult(Demux* block) {
 }
 
 FunctionCall* FunctionGraph::getFunctionCallBlock(unsigned int index) {
-    assert(index < wrapper.callBlocks.size());
+    assert(index < wrapper.callBlocks.size() && "Wrong wrapper dummy block");
     return wrapper.callBlocks[index];
 }
 
@@ -275,62 +279,61 @@ void FunctionGraph::freeGraph() {
     basicBlocks.clear();
 }
 
-void FunctionGraph::printNodes(ostream &file) {
-    assert(functionName.length() > 0);
-    file << "subgraph cluster_" + functionName + "{" << endl;
-    file << "\tlabel=\"DataFlow Graph for '" + functionName + "' function\";" << endl;
+void FunctionGraph::printNodes(ostream &file, Function& F) {
+    assert(functionName.length() > 0 && "Need function name");
+    file << "\tsubgraph cluster_" + functionName + " {" << endl;
+    file << "\t\tlabel = \"DataFlow Graph for '" + functionName + "' function\";" << endl;
     if (defaultPortWidth >= 0) {
-        file << endl;
-        file << "\tchannel_width = " << defaultPortWidth << endl;
+        file << "\t\tchannel_width = " << defaultPortWidth << endl;
     }
-    for (map <StringRef, BBGraph>::iterator it = basicBlocks.begin();
-        it != basicBlocks.end(); ++it) 
-    {
-        file << endl;
-        it->second.printBBNodes(file);
+    for (const BasicBlock& BB : F.getBasicBlockList()) {
+        basicBlocks[BB.getName()].printBBNodes(file);
     }
-    file << endl;
+    if (controlOut != nullptr and controlOut->getBlockType() == BlockType::Merge_Block) {
+        file << "\t\t// Outter blocks" << endl;
+        file << "\t\t";
+        controlOut->printBlock(file);
+        file << "\t\t";
+        result->printBlock(file);
+    }
     if (wrapper.timesCalled > 1) {
-        file << "// Call wrapper blocks" << endl;
-        file << '\t';
+        file << "\t\t// Call wrapper blocks" << endl;
+        file << "\t\t";
         wrapper.controlIn->printBlock(file);
-        for (Block* param : wrapper.paramsCall) {
-            Merge* merge = (Merge*)param;
-            file << '\t';
-            merge->printBlock(file);
+        for (unsigned int i = 0; i < wrapper.argsCall.size(); ++i) {
+            file << "\t\t";
+            wrapper.argsCall[i]->printBlock(file);
         }
-        for (Fork* fork : wrapper.controlInForks) {
-            file << '\t';
-            fork->printBlock(file);
+        for (unsigned int i = 0; i < wrapper.controlInForks.size(); ++i) {
+            file << "\t\t";
+            wrapper.controlInForks[i]->printBlock(file);
         }
-        file << '\t';
+        file << "\t\t";
         wrapper.result->printBlock(file);
-        file << '\t';
+        file << "\t\t";
         wrapper.controlOut->printBlock(file);
     }
-    file << "}" << endl;
+    file << "\t}" << endl;
 }
 
-void FunctionGraph::printEdges(ostream& file) {
-    file << endl;
-    file << "// " << functionName << " Channels" << endl; 
-    file << endl;
-    for (map <StringRef, BBGraph>::iterator it = basicBlocks.begin();
-        it != basicBlocks.end(); ++it) 
-    {
-        file << endl;
-        it->second.printBBEdges(file);
+void FunctionGraph::printEdges(ostream& file, Function& F) {
+    file << "\t// " << functionName << " Channels" << endl; 
+    for (const BasicBlock& BB : F.getBasicBlockList()) {
+        basicBlocks[BB.getName()].printBBEdges(file);
     }
-    file << endl;
+    if (controlOut != nullptr and controlOut->getBlockType() == BlockType::Merge_Block) {
+        file << "\t// Outter blocks channels" << endl;
+        controlOut->printChannels(file);
+        result->printChannels(file);
+    }
     if (wrapper.timesCalled > 1) {
-        file << "// Call wrapper channels" << endl;
+        file << "\t// Call wrapper channels" << endl;
         wrapper.controlIn->printChannels(file);
-        for (Block* param : wrapper.paramsCall) {
-            Merge* merge = (Merge*)param;
-            merge->printChannels(file);
+        for (unsigned int i = 0; i < wrapper.argsCall.size(); ++i) {
+            wrapper.argsCall[i]->printChannels(file);
         }
-        for (Fork* fork : wrapper.controlInForks) {
-            fork->printChannels(file);
+        for (unsigned int i = 0; i < wrapper.controlInForks.size(); ++i) {
+            wrapper.controlInForks[i]->printChannels(file);
         }
         wrapper.result->printChannels(file);
         wrapper.controlOut->printChannels(file);

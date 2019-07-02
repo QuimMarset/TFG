@@ -44,7 +44,7 @@ private:
     void computeUsesDefs(const BasicBlock &BB, set<const Value*> &uses, 
         set<const Value*> &defs);
 
-    void computePhiVars(const BasicBlock& BB);
+    void processPhiUses(const BasicBlock& BB);
 
     bool iterateBasicBlock(const BasicBlock &BB, const set<const Value*> &uses, 
         const set<const Value*> &defs, map<StringRef, set<const Value*> > &livesIn, 

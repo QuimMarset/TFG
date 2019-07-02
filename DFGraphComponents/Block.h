@@ -29,13 +29,16 @@ public:
     
     void setBlockDelay(unsigned int blockDelay);
 
+    // We store in each block the connections of its output ports, storing for each output port
+    //  which block and the index of which input port is connected with
     virtual pair <Block*, int> getConnectedPort() = 0;
     virtual void setConnectedPort(pair <Block*, int> connection) = 0;
     virtual void setConnectedPort(Block* block, int portIdx) = 0;
     virtual bool connectionAvailable() = 0;
     virtual unsigned int getOutputPortIndex() = 0;
 
-    virtual const Port& getInputPort(unsigned int index) = 0;
+    // Used to get an input port that an output port is connected with
+    virtual const Port& getInputPort(unsigned int index) = 0; 
 
     virtual void printBlock(ostream& file) = 0;
     virtual void printChannels(ostream& file) = 0;
@@ -48,13 +51,14 @@ protected:
     string blockName;
     BlockType blockType;
     unsigned int blockDelay;
+    // Used to know where to place certain modules like forks
     const BasicBlock* parentBB;
 
 };
 
 
 class Operator : public Block {
-
+// We represent multiple instructions, involving different number of operators
 public:
 
     Operator(OpType opType, const BasicBlock* parentBB = nullptr, 
@@ -94,6 +98,7 @@ private:
     unsigned int latency;
     unsigned int II;
     pair <Block*, int> connectedPort;
+    // Used to assign a number to each block of the same type we create
     static vector<unsigned int> instanceCounter;
 
 };
@@ -103,16 +108,14 @@ class Buffer : public Block {
 
 public:
 
-    Buffer(const BasicBlock* parentBB = nullptr, unsigned int slots = 2, 
-        bool transparent = false, int portWidth = -1,
-        unsigned int blockDelay = 0);
+    Buffer(const BasicBlock* parentBB = nullptr, int portWidth = -1,
+        unsigned int blockDelay = 0, unsigned int slots = 2, 
+        bool transparent = false);
     ~Buffer();
 
     void setNumSlots(unsigned int slots);
     void setTransparent(bool transparent);
 
-    void setDataInPortWidth(int width);
-    void setDataOutPortWidth(int width);
     void setDataPortWidth(int width);
 
     void setDataInPortDelay(unsigned int delay);
@@ -140,8 +143,8 @@ private:
 };
 
 
+// Interface to deal with the common part of each type of constant
 class ConstantInterf : public Block {
-
 public:
 
     void setDataPortWidth(int width);
@@ -214,8 +217,8 @@ void Constant<T>::printBlock(ostream &file) {
     file << ", out = \"" << dataOut << "\"";
     bool first = true;
     if (controlIn.getDelay() > 0) {
-        file << ", delay = \"";
         first = false;
+        file << ", delay = \"";
         file << controlIn.getName() << ":" << controlIn.getDelay();
     }
     if (dataOut.getDelay() > 0) {
@@ -227,8 +230,12 @@ void Constant<T>::printBlock(ostream &file) {
         if (blockDelay > 0) file << blockDelay << " "; 
         file << " " << dataOut.getName() << ":" << dataOut.getDelay() << "\""; 
     }
-    if (first and blockDelay > 0) file << ", delay = " << blockDelay;
-    else if (!first) file << "\"";
+    else if (blockDelay > 0) {
+        if (first) file << ", delay = ";
+        else file << " ";
+        file << blockDelay;
+    }
+    if (!first) file << "\"";
     file << ", value = " << value;
     file << "];" << endl;
 }
@@ -374,7 +381,8 @@ private:
     static unsigned int instanceCounter;
     pair <Block*, int> connectedPortTrue;
     pair <Block*, int> connectedPortFalse;
-    bool currentPort;
+    // Used to modify true port or false port, permitting the use of the overrided methods
+    bool currentPort; 
     
 };
 
@@ -396,7 +404,7 @@ public:
     void setDataInPortDelay(unsigned int delay);
     void setDataOutPortDelay(unsigned int index, unsigned int delay);
 
-    void setCurrentConnectedPort(int current);
+    void setCurrentConnectedPort(unsigned int current);
 
     pair <Block*, int> getConnectedPort() override;
     void setConnectedPort(Block* block, int idxPort) override;
@@ -415,14 +423,16 @@ private:
     vector <Port> dataOut;
     static unsigned int instanceCounter;
     vector <pair <Block*, int> > connectedPorts;
-    int currentConnected;
+    // We use it to set the port we want to connect using the override methods
+    // just like with the branch 
+    unsigned int currentConnected;
 
 };
 
-class EntryInterf : public Block {
-
+// Interface to deal with the entry control and entry arguments
+class EntryInterf : public Block { 
 public:
-
+    
     void setInPortDelay(unsigned int delay);
     void setOutPortDelay(unsigned int delay);
 
@@ -480,8 +490,8 @@ private:
 };
 
 
+// Interface to deal with the exit control and exit result
 class ExitInterf : public Block {
-
 public:
 
     void setInPortDelay(unsigned int delay);
@@ -540,7 +550,7 @@ private:
 
 };
 
-
+// Represents a function call
 class FunctionCall : public Block {
 
 public:
@@ -548,8 +558,7 @@ public:
     FunctionCall(const BasicBlock* parentBB = nullptr);
     ~FunctionCall();
 
-    void setConnectedPortResult(Block* block, int idxPort);
-    void setConnectedPortControl(Block* block, int idxPort);
+    void setConnectedControlPort(Block* block, int idxPort);
     
     pair <Block*, int> getConnectedPort() override;
     void setConnectedPort(Block* block, int idxPort) override;
@@ -572,10 +581,19 @@ public:
     void printChannels(ostream& file) override;
 
 private:
-    
+    /* Used to store the connections the first time we call each function, 
+        of each parameter passed, that we do not know if we need the wrapper or only simply channels. 
+        We connect them to this dummy block, storing the connections (Block + port index)
+        to later modify them when we have defined the called function */
     vector <pair <Block*, int> > inputArgumentPorts;
+    /* The same as the one above, but we only store the connection passing the input control signals */
     pair <Block*, int> inputControlPort;
+    /* Used to store the connection that the called function will have to connect the block storing
+        its result with, in order to later modify this connection when the called function is processed.
+        Used like the other type of blocks to connect this dummy block with the same method than the other
+        types. */
     pair <Block*, int> connectedResultPort;
+    /* The same as above but in this case the called function control signals */
     pair <Block*, int> connectedControlPort;
 
 };

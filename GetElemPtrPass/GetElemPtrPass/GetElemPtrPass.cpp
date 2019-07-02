@@ -28,14 +28,14 @@ struct GetElemPtrPass : public FunctionPass {
                     IRBuilder<> builder(inst); 
                     Value* resultPtr;
                     unsigned int numCsts = 0;
-                    if (inst->hasAllZeroIndices()) {
+                    if (inst->hasAllZeroIndices()) { // Simplu change types
                         resultPtr = builder.CreateBitCast(inst->getOperand(0), inst->getType());
                     }
                     else {
-                        Type* intType = DL.getIntPtrType(inst->getType());
+                        Type* intType = DL.getIntPtrType(inst->getType()); // Integer type with same size as the pointer
                         unsigned int typeSize = DL.getTypeSizeInBits(intType);
-                        resultPtr = builder.CreatePtrToInt(inst->getOperand(0), intType);
-                        APInt intOffset = APInt(typeSize, 0);
+                        resultPtr = builder.CreatePtrToInt(inst->getOperand(0), intType); // Pointer to integer
+                        APInt intOffset = APInt(typeSize, 0); // store the constant offset of all the constant indices
                         if (inst->accumulateConstantOffset(DL, intOffset)) {
                             resultPtr = builder.CreateAdd(resultPtr, 
                                 ConstantInt::get(intType, intOffset));
@@ -52,10 +52,10 @@ struct GetElemPtrPass : public FunctionPass {
                                     if (constant->isZero()) continue;
                                     else isConstant = true;
                                 }
-                                if (gti.isSequential()) {
+                                if (gti.isSequential()) { // array type
                                     APInt elemSize = APInt(intType->getIntegerBitWidth(), 
-                                        DL.getTypeAllocSize(gti.getIndexedType()));
-                                    if (elemSize != 1) {
+                                        DL.getTypeAllocSize(gti.getIndexedType())); // size of each element in the array
+                                    if (elemSize != 1) { // multiply index by size
                                         if (elemSize.isPowerOf2()) {
                                             index = builder.CreateShl(index, 
                                                 ConstantInt::get(intType, elemSize.logBase2())); 
@@ -71,20 +71,20 @@ struct GetElemPtrPass : public FunctionPass {
                                     const StructLayout* sl = DL.getStructLayout(gti.getStructType());
                                     index = ConstantInt::get(intType, sl->getElementOffset(idxValue));
                                 }
-                                if (isConstant) {
+                                if (isConstant) { // an instruction is not created, but the Value performs the addition
                                     cstOffset = builder.CreateAdd(cstOffset, index);
                                     isConstant = false;
                                     numCsts++;
                                 }
                                 else {
-                                    resultPtr = builder.CreateAdd(resultPtr, index);
+                                    resultPtr = builder.CreateAdd(resultPtr, index); // instruction is created
                                 }
                             }
                             if (numCsts > 0) {
-                                resultPtr = builder.CreateAdd(resultPtr, cstOffset);
+                                resultPtr = builder.CreateAdd(resultPtr, cstOffset); // create the addition instruction of the constant offset
                             }
                         }
-                        resultPtr = builder.CreateIntToPtr(resultPtr, inst->getType());
+                        resultPtr = builder.CreateIntToPtr(resultPtr, inst->getType()); // return to pointer of the indexed type
                     }
                     ++it2;
                     inst->replaceAllUsesWith(resultPtr);
