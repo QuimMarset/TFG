@@ -135,7 +135,6 @@ void DFGraphPass::processFunction(Function &F) {
 
 void DFGraphPass::processBinaryInst(const Instruction &inst) 
 {
-    unsigned int typeSize = DL.getTypeSizeInBits(inst.getType());
     OpType opType;
     unsigned int opCode = inst.getOpcode();
     if (opCode == Instruction::Add) {
@@ -183,6 +182,7 @@ void DFGraphPass::processBinaryInst(const Instruction &inst)
     else if (opCode == Instruction::LShr or opCode == Instruction::AShr) {
         opType = OpType::ShiftR;
     }
+    unsigned int typeSize = DL.getTypeSizeInBits(inst.getType());
     const BasicBlock* BB = inst.getParent();
     DFGraphComp::Operator* op = new DFGraphComp::Operator(opType, BB, typeSize);
     processOperator(inst.getOperand(0), op, 0, BB);
@@ -260,9 +260,8 @@ void DFGraphPass::processCmpInst(const Instruction &inst) {
 
 void DFGraphPass::processFNegInst(const Instruction &inst) {
    const BasicBlock* BB = inst.getParent(); 
-   OpType opType = OpType::FNeg;
    unsigned int typeSize = DL.getTypeSizeInBits(inst.getType());
-   DFGraphComp::Operator* op = new DFGraphComp::Operator(opType, BB, typeSize);
+   DFGraphComp::Operator* op = new DFGraphComp::Operator(OpType::FNeg, BB, typeSize);
    processOperator(inst.getOperand(0), op, 0, BB);
    graph->addBlockToBB(op);
    varsMapping[BB->getName()][&inst] = op;
@@ -683,7 +682,7 @@ void DFGraphPass::processLiveIn(const BasicBlock* BB) {
             varsMerges[BB][value] = merge;
         }
     }
-    else {
+    else { // pred_size(BB) == 1
         const BasicBlock* predBB = *pred_begin(BB);
         for (set <const Value*>::const_iterator it = liveIn.begin();
             it != liveIn.end(); ++it) 
@@ -725,7 +724,7 @@ void DFGraphPass::processPhiConstants(const BasicBlock* BB) {
             phiMerge = new Merge(phiBB, DL.getTypeSizeInBits(phi->getType()));
             if (createdBB) {
                 graph->addBlockToBB(phiMerge);
-                graph->setCurrentBB(BBName); // current BB changed when we created the BB
+                graph->setCurrentBB(BBName); // restore current BB to the one at the beginning of the function
             }
             else graph->addBlockToBB(phiBB->getName(), phiMerge);
             varsMapping[phiBB->getName()][phi] = phiMerge;
@@ -839,11 +838,13 @@ void DFGraphPass::connectBlocks(Block* block, Block* connecBlock,
         pair <Block*, int> prevConnection = block->getConnectedPort();
         const BasicBlock* prevBB = prevConnection.first->getParentBB();
         const BasicBlock* currBB = connecBlock->getParentBB();
+        const BasicBlock* oldBB = block->getParentBB();
         int portWidth = 0;
         if (value != nullptr) portWidth = DL.getTypeSizeInBits(value->getType());
         Fork* fork;
-        if (prevBB == nullptr) fork = new Fork(currBB, portWidth);
-        else fork = new Fork(prevBB, portWidth);
+        if (currBB != nullptr) fork = new Fork(currBB, portWidth);
+        else if (prevBB != nullptr) fork = new Fork(prevBB, portWidth);
+        else fork = new Fork(oldBB, portWidth);
         fork->setConnectedPort(prevConnection);
         fork->setConnectedPort(connecBlock, connecPort);
         block->setConnectedPort(fork, 0);
@@ -854,9 +855,15 @@ void DFGraphPass::connectBlocks(Block* block, Block* connecBlock,
                 else graph->addBlockToBB(prevBBName, fork);
                 varsMapping[prevBBName][value] = fork;
             }
-            else {
+            else if (currBB != nullptr) {
                 graph->addBlockToBB(fork);
                 varsMapping[currBB->getName()][value] = fork;
+            }
+            else {
+                StringRef oldBBName = oldBB->getName();
+                if (oldBB == currBB) graph->addBlockToBB(fork);
+                else graph->addBlockToBB(oldBBName, fork);
+                varsMapping[oldBBName][value] = fork;
             }
         }
         else {
@@ -866,9 +873,15 @@ void DFGraphPass::connectBlocks(Block* block, Block* connecBlock,
                 else graph->addControlBlockToBB(prevBBName, fork);
                 controlBlocks[prevBBName] = fork;
             }
-            else {
+            else if (currBB != nullptr) {
                 graph->addControlBlockToBB(fork);
                 controlBlocks[currBB->getName()] = fork;
+            }
+            else {
+                StringRef oldBBName = oldBB->getName();
+                if (oldBB == currBB) graph->addControlBlockToBB(fork);
+                else graph->addControlBlockToBB(oldBBName, fork);
+                controlBlocks[oldBBName] = fork;
             }
         }
     }
