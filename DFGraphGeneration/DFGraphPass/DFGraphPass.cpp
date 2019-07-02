@@ -86,7 +86,8 @@ void DFGraphPass::processFunction(Function &F) {
             else if (isa<llvm::CmpInst>(inst_it)) {
                 processCmpInst(*inst_it);
             }
-            // else if (inst_it->getOpcode == Instruction::FNeg) {
+            // Uncomment if version >= 8
+            // else if (inst_it->getOpcode() == Instruction::FNeg) {
             //     processFNegInst(*inst_it);
             // }
             else if (isa<AllocaInst>(inst_it)) {
