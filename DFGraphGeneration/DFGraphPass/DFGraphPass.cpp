@@ -838,12 +838,10 @@ void DFGraphPass::connectBlocks(Block* block, Block* connecBlock,
     else {
         pair <Block*, int> prevConnection = block->getConnectedPort();
         const BasicBlock* prevBB = prevConnection.first->getParentBB();
-        StringRef prevBBName = prevBB->getName();
         const BasicBlock* currBB = connecBlock->getParentBB();
-        StringRef currBBName = currBB->getName();
-        Fork* fork;
         int portWidth = 0;
         if (value != nullptr) portWidth = DL.getTypeSizeInBits(value->getType());
+        Fork* fork;
         if (prevBB == nullptr) fork = new Fork(currBB, portWidth);
         else fork = new Fork(prevBB, portWidth);
         fork->setConnectedPort(prevConnection);
@@ -851,24 +849,26 @@ void DFGraphPass::connectBlocks(Block* block, Block* connecBlock,
         block->setConnectedPort(fork, 0);
         if (value != nullptr) {
             if (prevBB != nullptr) {
+                StringRef prevBBName = prevBB->getName();
                 if (prevBB == currBB) graph->addBlockToBB(fork);
                 else graph->addBlockToBB(prevBBName, fork);
                 varsMapping[prevBBName][value] = fork;
             }
             else {
                 graph->addBlockToBB(fork);
-                varsMapping[currBBName][value] = fork;
+                varsMapping[currBB->getName()][value] = fork;
             }
         }
         else {
             if (prevBB != nullptr) {
+                StringRef prevBBName = prevBB->getName();
                 if (prevBB == currBB) graph->addControlBlockToBB(fork);
                 else graph->addControlBlockToBB(prevBBName, fork);
                 controlBlocks[prevBBName] = fork;
             }
             else {
                 graph->addControlBlockToBB(fork);
-                controlBlocks[currBBName] = fork;
+                controlBlocks[currBB->getName()] = fork;
             }
         }
     }
